@@ -5,8 +5,8 @@ var express 	 		 = require("express"),
 		flash	 				 = require('connect-flash'),
 		methodOverride = require('method-override'),
 		session				 = require('express-session'),
-		cookieParser	 = require('cookie-parser'),
-		pushSubApi     = require('./models/subscription-store');
+		cookieParser	 = require('cookie-parser');
+		
 
 var indexRoutes  = require('./routes/index'),
 		taskRoutes   = require('./routes/tasks'),
@@ -47,7 +47,6 @@ app.use(function(req, res, next) {
 		res.locals.currentUser = req.session.currentUser;
 		res.locals.error = req.flash("error");
 		res.locals.success = req.flash("success");
-		res.locals.vapidPublicKey = pushSubApi.getVAPIDPublicKey();
 		next();
 });
 

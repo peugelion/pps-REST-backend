@@ -2,7 +2,6 @@ let express    = require('express'),
 		router  	 = express.Router(),
 		middleware = require('../middleware'),
 		hubieApi 	 = require('../models/hubie-interface').connect(),
-		pushSubApi = require('../models/subscription-store'),
 		moment 		 = require('moment');
 
 moment.locale('sr');
@@ -128,35 +127,5 @@ router.put("/:id", middleware.isLoggedIn, function(req, res) {
 			console.log(err);
 		});
 });
-
-// user subscription specific routes
-// save users subscription to db
-router.post('/api/save-subscription/', function (req, res) {
-  if (!pushSubApi.isValidSaveRequest(req, res)) {
-    return;
-  }
-
-  return pushSubApi.saveSubscriptionToDatabase(req.body)
-	  .then(function(subscriptionId) {
-	    res.setHeader('Content-Type', 'application/json');
-	    res.send(JSON.stringify({ 
-	    	data: { 
-	    		success: true, 
-	    		subscriptionId: subscriptionId 
-	    	}
-	    }));
-	  })
-	  .catch(function(err) {
-	    res.status(500);
-	    res.setHeader('Content-Type', 'application/json');
-	    res.send(JSON.stringify({
-	      error: {
-	        id: 'unable-to-save-subscription',
-	        message: 'The subscription was received but we were unable to save it to the database.'
-	      }
-	    }));
-	  });
-});
-// end of subscription specific routes
 
 module.exports = router;

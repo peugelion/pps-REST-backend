@@ -7,5 +7,3 @@ semantic/
 node_modules/
 /nbproject/private/
 nbproject/
-hubie-interface.js
-db/subscription-store.db
