@@ -1,0 +1,141 @@
+<%- include('partials/header') %>
+<%- include('partials/header-pwa') %>
+
+<div class="ui main container _smaller_margin_on_mobile">
+  <div class="ui page">
+  	<% if(error && error.length > 0) { %>
+			<div class="ui black attached big red message">
+			  <i class="close icon"></i>
+			  <%= error %>
+			</div>
+		<% } %>
+		<% if(success && success.length > 0) { %>
+			<div class="ui success attached big green message">
+			  <i class="close icon"></i>
+			  <%= success %>
+			</div>
+		<% } %>
+
+		<div class="hidden" id="idInstallPwaBtn">
+			<button class="fluid ui red button" onclick="add_to_home(event)" *ngIf="showBtn" >Install App</button>
+			<br>
+		</div>
+		<a href="/tasks/new" id="idNewTask" title="Napravi novi task">
+  		<button class="ui labeled red icon button"><i class="right add icon"></i>Novi Task</button>
+  	</a>
+    
+		<div class="ui top attached tabular menu">
+		  <div class="item active" data-tab="mine">Dodeljeni</div>
+		  <div class="item" data-tab="unassigned">Nedodeljeni</div>
+		</div>
+		<div class="ui bottom attached tab segment active" data-tab="mine">
+		  <% for (task of assignedTasks) { %>
+      <div class="ui segment ep_task" id="<%= task.Pk_Id %>">
+				<div class="ui ribbon label red">
+					<%= task.naziv.replace(' d.o.o.', '') %>
+				</div>
+					<span><%= (task.Subject.substring(0, 4) === "WEB ") ? task.Subject.substring(4) : task.Subject %></span>
+				<p class="ep_tasksubject"></p>
+				<div class="ui bottom right attached image label">
+					<%= moment(task.Datum).format('ddd D. MMM'); %>
+					<% if (task.PlanDo ? task.PlanDo != task.Datum.toString() : true || task.PlanOd ? task.PlanOd != task.Datum.toString() : true) { %>
+						<% if (task.PlanDo ? true : task.PlanOd == task.Datum.toString() ? true : false) { %>
+							<% if (task.PlanOd) { %><span class="detail">plan: <% if(task.PlanDo && task.PlanOd != task.PlanDo.toString() && task.PlanOd != task.Datum.toString()) { %><%= moment(task.PlanOd).format( 'D' ); %> -<% } %><% } %>
+							<% if (task.PlanDo) { %><%= moment(task.PlanDo).format( 'D. MMM' ); %></span><% } %>
+						<% } %>
+					<% } %>
+
+			    	<% for (status of taskStatuses) { %>
+			    		<% if (status.Pk_Id === task.Fk_St_420 && status.Pk_Id != 2243) { %>
+		    				<span class="detail"><%= status.Naziv_Stavke %></span>
+			    		<% } %>
+			    	<% } %>
+					<span class="detail"><%= (task.Subject.substring(0, 4) === "WEB ") ? "Web" : "Hubie" %></span>
+				</div>
+      </div>
+			<% } %>
+		</div>
+		<div class="ui bottom attached tab segment" data-tab="unassigned">
+		  <!-- partners accordion -->
+		  <div class="ui styled fluid accordion">
+		  <% for (partner of Object.keys(groupedTasksByPartner)) { %>
+			  <div class="title">
+			    <i class="dropdown icon"></i>
+			    <%= partner + "   [" + groupedTasksByPartner[partner].length + "]" %>
+			  </div>
+			  <div class="content">
+			    <% for (task of groupedTasksByPartner[partner]) { %>
+		      <div class="ui segment ep_task transition hidden" id="<%= task.Pk_Id %>" name="<%= task.Fk_Partner %>">
+						<div class="ui ribbon label red">
+							<%= task.naziv.replace(' d.o.o.', '') %>
+						</div>
+						<span class=""><%= (task.Subject.substring(0, 4) === "WEB ") ? task.Subject.substring(4) : task.Subject %></span>
+						<p class="ep_tasksubject"></p>
+						<div class="ui bottom right attached image label">
+							<%= moment(task.Datum).format('ddd D. MMM'); %>
+							<% if (task.PlanDo ? task.PlanDo != task.Datum.toString() : true || task.PlanOd ? task.PlanOd != task.Datum.toString() : true) { %>
+								<% if (task.PlanDo ? true : task.PlanOd == task.Datum.toString() ? true : false) { %>
+									<% if (task.PlanOd) { %><span class="detail">plan: <% if(task.PlanDo && task.PlanOd != task.PlanDo.toString() && task.PlanOd != task.Datum.toString()) { %><%= moment(task.PlanOd).format( 'D' ); %> -<% } %><% } %>
+									<% if (task.PlanDo) { %><%= moment(task.PlanDo).format( 'D. MMM' ); %></span><% } %>
+								<% } %>
+							<% } %>
+
+					    	<% for (status of taskStatuses) { %>
+					    		<% if (status.Pk_Id === task.Fk_St_420 && status.Pk_Id != 2243) { %>
+				    				<span class="detail"><%= status.Naziv_Stavke %></span>
+					    		<% } %>
+					    	<% } %>
+							<span class="detail"><%= (task.Subject.substring(0, 4) === "WEB ") ? "Web" : "Hubie" %></span>
+						</div>
+		      </div>
+					<% } %>
+			  </div>
+			<% } %>
+			</div>
+		</div>
+  </div>
+</div>
+<script>
+
+	//var tasks = ""<%// JSON.stringify(loadedTasks) %>;
+
+	/* jQuery */
+	// $(document).ready(function(){
+	// 		$('.ui.segment.ep_task').click(function(){
+	// 		window.location = '/tasks/' +this.id+ '/edit';
+	// 	});
+	// });
+
+	/* JS */
+	// var partnersArr = <%// JSON.stringify(partnersArr) %>;
+
+	function setup() {
+	    var ep_taskEls = document.querySelectorAll('.ui.segment.ep_task');
+	    
+		Array.prototype.forEach.call(ep_taskEls, function(el, i){
+      		el.addEventListener('click', function() {
+      			window.location = '/tasks/' +this.id+ '/edit';
+      		});
+		});
+
+		$('.message .close').on('click', function() { $(this).closest('.message').transition('fade'); });
+
+		$('.tabular.menu .item').tab();
+
+		$('.ui.accordion').accordion();
+
+		// $("#partners").change(function(e) {
+		// 	partnerId = e.target.value;
+		// 	// go through all unassigned tasks
+		// 	$(".unassigned").each(function(el){
+		// 		// hide all but the ones from a selected partner
+		// 		$(this).attr('name') !== partnerId ? $(this).addClass('hideTask') : $(this).removeClass('hideTask');
+		// 	});
+		// });
+
+		// $("#partners").trigger('change');
+	}
+
+	window.onload = setup;
+
+</script>

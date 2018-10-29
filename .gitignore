@@ -1,0 +1,11 @@
+.directory
+.tern-port
+.tern-project
+*.pem
+backup/
+semantic/
+node_modules/
+/nbproject/private/
+nbproject/
+hubie-interface.js
+db/subscription-store.db
