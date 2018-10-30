@@ -6,7 +6,8 @@ var express 	 		 = require("express"),
 		methodOverride = require('method-override'),
 		session				 = require('express-session'),
 		cookieParser	 = require('cookie-parser');
-		
+		cors = require('cors');
+
 
 var indexRoutes  = require('./routes/index'),
 		dashboard 	 = require('./routes/dashboard');
@@ -16,6 +17,19 @@ var indexRoutes  = require('./routes/index'),
 // body-parser provides req.body object
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
+// app.use(cors());
+var whitelist = ['http://localhost', 'http://localhost:4200', 'http://127.0.0.1', 'http://127.0.0.1:4200']
+var corsOptions = {
+	origin: function (origin, callback) {
+	  if (whitelist.indexOf(origin) !== -1 || !origin) {
+		callback(null, true)
+	  } else {
+		callback(new Error('Not allowed by CORS'))
+	  }
+	},
+	credentials: true
+  }
+app.use(cors(corsOptions));
 
 // with this I'm serving the public directory
 app.use(express.static(__dirname + "/public"));
