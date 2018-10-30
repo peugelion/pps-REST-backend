@@ -3,16 +3,10 @@ var sql = require('mssql');
 const config = {
 	user: 'sa',
 	password: 'password',
-	//password: 'T1tanstr0ng',
-  server: '10.11.2.138',
-  //port:'8888',
-  //database: 'hubie_web',
-// user: 'task',
-// password: 'sbs0103',
-// server: '10.11.2.30',
-  //port:'9999',
-	//database: 'sql2008r2d',
-	database: 'hubie_web',
+  server: '10.11.2.19',
+	database: 'hubie',
+	// server: '10.11.2.138',
+	// database: 'hubie_web',
   connectionTimeout: 5000,
   requestTimeout: 10000,
   pool: {
@@ -20,7 +14,8 @@ const config = {
   	idleTimeoutMillis: 60000
 	},
 	options: {
-		encrypt: true
+		encrypt: true,
+		instanceName: 'sql2008r2d'
 	}
 }
 
@@ -144,7 +139,7 @@ module.exports = function() {
 								 .input('Fk_Prijava', sql.Int, ticket_id)
 						.execute('Prijava_GetTicket');
 		},
-		sp_VratiRS: function(companyCode, lang_id, appUser, whichTable, FkStSt) {
+		vratiRS: function(companyCode, lang_id, appUser, whichTable, FkStSt) {
 			return pool.request()
 								 .input('Sifra_Preduzeca', sql.Int, companyCode)
 								 .input('jezik_id', sql.Int, lang_id)
@@ -153,13 +148,54 @@ module.exports = function() {
 								 .input('FkStSt', sql.Int, FkStSt)
 						.execute('sp_VratiRS');
 		},
-		sp_VratiPodredjeneRadnike: function(companyCode, lang_id, fk_appUser) {
-			console.log("pool object inside sp_VratiPodredjeneRadnike = ", pool);
+		vratiPodredjeneRadnike: function(companyCode, lang_id, fk_appUser) {
 			return pool.request()
 								 .input('Sifra_Preduzeca', sql.Int, companyCode)
 								 .input('Jezik_Id', sql.Int, lang_id)
 								 .input('Sifra_Radnika', sql.Int, fk_appUser)
 						.execute('sp_VratiPodredjeneRadnike');
+		},
+		// ova procedura vraca konkretne podatke o ruti za izabranog radnika - prodavca, podatke o njegovim posetama u danu
+		rptDnevniPregledRute: function(companyCode, fiscalYear, lang_id, fk_seller, date) {
+			return pool.request()
+								.input('SifraPreduzeca', sql.Int, companyCode)
+								.input('fk_poslovna_Godina', sql.Int, fiscalYear)
+								.input('Jezik_id', sql.Int, lang_id)
+								.input('Fk_Prodavac', sql.Int, fk_seller)
+								.input('datum', sql.DateTime, date)
+						.execute('sp_RptDnevniPregledRute');
+		},
+		// ova procedura vraca za konkretnog partnera na ruti, njegove pozicije
+		// @Sifra_Preduzeca=1,@Jezik_Id=4,@Fk_Partner=63999,@Datum='2018-05-29 00:00:00'
+		getPodaciPartnerPozicija: function(companyCode, lang_id, fk_partner, date) {
+			return pool.request()
+								.input('Sifra_Preduzeca', sql.Int, companyCode)
+								.input('Jezik_Id', sql.Int, lang_id)
+								.input('Fk_Partner', sql.Int, fk_partner)
+								.input('Datum', sql.DateTime, date)
+						.execute('sp_GetPodaciPartnerPozicija');
+		},
+		// ova procedura vraca za konkretnog partnera na ruti, i poziciju slike pozicije.
+		// @Sifra_Preduzeca=1,@Jezik_Id=4,@Fk_Partner=63999,@Fk_Pozicija=6,@Datum='2018-05-29 00:00:00'
+		getPodaciPartnerPozicijaSlikeNew: function(companyCode, lang_id, fk_partner, fk_position, date) {
+			return pool.request()
+								.input('Sifra_Preduzeca', sql.Int, companyCode)
+								.input('Jezik_Id', sql.Int, lang_id)
+								.input('Fk_Partner', sql.Int, fk_partner)
+								.input('Fk_Pozicija', sql.Int, fk_position)
+								.input('Datum', sql.DateTime, date)
+						.execute('sp_GetPodaciPartnerPozicijaSlikeNew');
+		},
+		// vraca stanje osnovnih sredstava kod kupca
+		// @Sifra_Predizece=1,@Jezik_Id=4,@Fk_PoslovnaGodina=16,@Fk_Partner=63999,@Datum='2018-05-29 00:00:00'
+		vratiZalihePartnerOS: function(companyCode, lang_id, fiscalYear, fk_partner, date) {
+			return pool.request()
+								.input('Sifra_Predizece', sql.Int, companyCode)
+								.input('Jezik_Id', sql.Int, lang_id)
+								.input('Fk_PoslovnaGodina', sql.Int, fiscalYear)
+								.input('Fk_Partner', sql.Int, fk_partner)
+								.input('Datum', sql.DateTime, date)
+						.execute('sp_VratiZalihePartnerOS');
 		}
 	}
 }();
