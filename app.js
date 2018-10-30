@@ -9,8 +9,9 @@ var express 	 		 = require("express"),
 		
 
 var indexRoutes  = require('./routes/index'),
-		taskRoutes   = require('./routes/tasks'),
-		ticketRoutes = require('./routes/tickets');
+		dashboard 	 = require('./routes/dashboard');
+		// taskRoutes   = require('./routes/tasks'),
+		// ticketRoutes = require('./routes/tickets');
 
 // body-parser provides req.body object
 app.use(bodyParser.urlencoded({extended: true}));
@@ -52,8 +53,9 @@ app.use(function(req, res, next) {
 
 // use the REST routes
 app.use(indexRoutes); 
-app.use("/tasks", taskRoutes); 
-app.use("/tickets", ticketRoutes); 
+app.use("/dashboard", dashboard); 
+//app.use("/tasks", taskRoutes); 
+//app.use("/tickets", ticketRoutes); 
 
 //app.use(router);
 

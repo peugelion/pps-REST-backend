@@ -2,7 +2,8 @@ var sql = require('mssql');
 
 const config = {
 	user: 'sa',
-  password: 'password',
+	password: 'password',
+	//password: 'T1tanstr0ng',
   server: '10.11.2.138',
   //port:'8888',
   //database: 'hubie_web',
@@ -10,13 +11,17 @@ const config = {
 // password: 'sbs0103',
 // server: '10.11.2.30',
   //port:'9999',
-  database: 'hubie_web',
+	//database: 'sql2008r2d',
+	database: 'hubie_web',
   connectionTimeout: 5000,
   requestTimeout: 10000,
   pool: {
   	max: 15,
   	idleTimeoutMillis: 60000
-  }
+	},
+	options: {
+		encrypt: true
+	}
 }
 
 module.exports = function() {
@@ -138,6 +143,23 @@ module.exports = function() {
 								 .input('Jezik_id', sql.Int, lang_id)
 								 .input('Fk_Prijava', sql.Int, ticket_id)
 						.execute('Prijava_GetTicket');
+		},
+		sp_VratiRS: function(companyCode, lang_id, appUser, whichTable, FkStSt) {
+			return pool.request()
+								 .input('Sifra_Preduzeca', sql.Int, companyCode)
+								 .input('jezik_id', sql.Int, lang_id)
+								 .input('sifra_nvar', sql.NVarChar(16), appUser)
+								 .input('KojaTabela', sql.NVarChar(64), whichTable)
+								 .input('FkStSt', sql.Int, FkStSt)
+						.execute('sp_VratiRS');
+		},
+		sp_VratiPodredjeneRadnike: function(companyCode, lang_id, fk_appUser) {
+			console.log("pool object inside sp_VratiPodredjeneRadnike = ", pool);
+			return pool.request()
+								 .input('Sifra_Preduzeca', sql.Int, companyCode)
+								 .input('Jezik_Id', sql.Int, lang_id)
+								 .input('Sifra_Radnika', sql.Int, fk_appUser)
+						.execute('sp_VratiPodredjeneRadnike');
 		}
-	}	
+	}
 }();
