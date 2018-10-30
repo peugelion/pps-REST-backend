@@ -3,16 +3,11 @@ var sql = require('mssql');
 const config = {
 	user: 'sa',
 	password: 'password',
+	// server: '10.11.2.138',
+  	// database: 'hubie_web',
 	//password: 'T1tanstr0ng',
-  server: '10.11.2.138',
-  //port:'8888',
-  //database: 'hubie_web',
-// user: 'task',
-// password: 'sbs0103',
-// server: '10.11.2.30',
-  //port:'9999',
-	//database: 'sql2008r2d',
-	database: 'hubie_web',
+  server: '10.11.2.19',
+  database: 'Hubie',
   connectionTimeout: 5000,
   requestTimeout: 10000,
   pool: {
@@ -20,7 +15,8 @@ const config = {
   	idleTimeoutMillis: 60000
 	},
 	options: {
-		encrypt: true
+		encrypt: true,
+		instanceName: 'sql2008r2d'
 	}
 }
 

@@ -41,6 +41,8 @@ router.get('/', function(req, res) {
 	// 	});
 });
 
+
+
 // search parters api
 router.get("/searchpartners/:searchstr", middleware.isLoggedIn, function(req, res) {
 	let session = req.session;
