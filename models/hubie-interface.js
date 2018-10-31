@@ -163,7 +163,7 @@ module.exports = function() {
 								.input('fk_poslovna_Godina', sql.Int, fiscalYear)
 								.input('Jezik_id', sql.Int, lang_id)
 								.input('Fk_Prodavac', sql.Int, fk_seller)
-								.input('datum', sql.DateTime, date)
+								.input('datum', sql.NVarChar, date)
 						.execute('sp_RptDnevniPregledRute');
 		},
 		// ova procedura vraca za konkretnog partnera na ruti, njegove pozicije

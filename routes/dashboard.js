@@ -25,4 +25,17 @@ router.get('/', function(req, res) {
 		});
 });
 
+// return selected-user routes
+router.get('/workerRoutes', function(req, res) {
+	console.log('req query = ', req.query);
+	 hubieApi.rptDnevniPregledRute(1, 16, 4, req.query.Fk_Radnik, req.query.datum)
+	//hubieApi.rptDnevniPregledRute(1, 16, 4, '1455', '2018-05-29 00:00:00')
+		.then(result => {
+			res.json(result);
+		})
+		.catch(err => {
+			console.log(err);
+		});
+});
+
 module.exports = router;
