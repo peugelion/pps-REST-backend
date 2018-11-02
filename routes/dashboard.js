@@ -27,6 +27,24 @@ router.get('/', function(req, res) {
 		});
 });
 
+// return selected-user routes
+router.get('/workerRoutes', function(req, res) {
+	console.log('req query = ', req.query);
+	 hubieApi.rptDnevniPregledRute(1, 16, 4, req.query.Fk_Radnik, req.query.datum)
+		.then(result => {
+			for (var i=0; i < result.recordset.length; i++) {
+				let route = result.recordset[i];
+				route.DatumPocetka = moment(route.DatumPocetka).utc().format('DD.MM.YYYY HH:mm:ss');
+				route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('DD.MM.YYYY HH:mm:ss');
+				route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('HH:mm:ss');
+			}			
+			res.json({"workerRoutes": result.recordset});
+		})
+		.catch(err => {
+			console.log(err);
+		});
+});
+
 router.get('/rptDnevniPregledRute/:Fk_Prodavac', function(req, res) { // Fk_Prodavac je Fk_Radnik za 'vratiRS' rute
   hubieApi.rptDnevniPregledRute(1, 16, 4, req.params.Fk_Prodavac, req.query.date)
 		.then(r => res.json(r.recordset))
