@@ -9,7 +9,7 @@ const config = {
   server: '10.11.2.19',
   database: 'Hubie',
   connectionTimeout: 5000,
-  requestTimeout: 10000,
+  requestTimeout: 100000,
   pool: {
   	max: 15,
   	idleTimeoutMillis: 60000

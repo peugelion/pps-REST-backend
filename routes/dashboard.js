@@ -29,9 +29,14 @@ router.get('/', function(req, res) {
 router.get('/workerRoutes', function(req, res) {
 	console.log('req query = ', req.query);
 	 hubieApi.rptDnevniPregledRute(1, 16, 4, req.query.Fk_Radnik, req.query.datum)
-	//hubieApi.rptDnevniPregledRute(1, 16, 4, '1455', '2018-05-29 00:00:00')
 		.then(result => {
-			res.json(result);
+			for (var i=0; i < result.recordset.length; i++) {
+				let route = result.recordset[i];
+				route.DatumPocetka = moment(route.DatumPocetka).utc().format('DD.MM.YYYY HH:mm:ss');
+				route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('DD.MM.YYYY HH:mm:ss');
+				route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('HH:mm:ss');
+			}			
+			res.json({"workerRoutes": result.recordset});
 		})
 		.catch(err => {
 			console.log(err);
