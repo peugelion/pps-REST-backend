@@ -5,15 +5,20 @@ let hubieApi 			= require('../models/hubie-interface').connect(),
 moment.locale('sr');
 
 middlewareObj.isLoggedIn = function(req, res, next) {
-	if(req.sessionID && req.session.fk_appUser) {
+	//console.log('req', req);
+	console.log('req.sessionID', req.sessionID);
+	// if(req.sessionID && req.session.fk_appUser) {
+	if(req.sessionID) {
+		console.log('isLoggedIn true');
 		return next();
 	}
-	req.flash("error", "You need to be logged in to do that!");
-	if (req.baseUrl.includes("tickets")) {
-		res.redirect('/login?forTicketing=true');
-	} else {
-		res.redirect('/login');
-	}
+	// req.flash("error", "You need to be logged in to do that!");
+	// if (req.baseUrl.includes("tickets")) {
+	// 	res.redirect('/login?forTicketing=true');
+	// } else {
+	// 	res.redirect('/login');
+	// }
+	res.json({ success: 'false' })
 }
 
 // middlewareObj.handleLogin = function(req, res, forTicketing) {

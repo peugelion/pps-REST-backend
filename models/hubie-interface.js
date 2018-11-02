@@ -1,6 +1,6 @@
 var sql = require('mssql');
 
-const config = {
+const configHubie = {
 	user: 'sa',
 	password: 'password',
 	// server: '10.11.2.138',
@@ -20,12 +20,24 @@ const config = {
 	}
 }
 
+const configHubie_irb = Object.assign({}, configHubie);
+configHubie_irb.database = 'Hubie_irb';
+
+
 module.exports = function() {
 	let connError = {};
 	let pool = null;
+	let poolHubie_irb = null;
 	return {
 		connect: function() {
-			pool = new sql.ConnectionPool(config, err => {
+			console.log('configHubie.database', configHubie.database);
+			pool = new sql.ConnectionPool(configHubie, err => {
+				if(err) {
+					connError.hasError = true;
+					connError.error = err.originalError;
+				}
+			});
+			poolHubie_irb = new sql.ConnectionPool(configHubie_irb, err => {
 				if(err) {
 					connError.hasError = true;
 					connError.error = err.originalError;
@@ -149,6 +161,7 @@ module.exports = function() {
 								 .input('FkStSt', sql.Int, FkStSt)
 						.execute('sp_VratiRS');
 		},
+
 		vratiPodredjeneRadnike: function(companyCode, lang_id, fk_appUser) {
 			return pool.request()
 								 .input('Sifra_Preduzeca', sql.Int, companyCode)
@@ -163,28 +176,28 @@ module.exports = function() {
 								.input('fk_poslovna_Godina', sql.Int, fiscalYear)
 								.input('Jezik_id', sql.Int, lang_id)
 								.input('Fk_Prodavac', sql.Int, fk_seller)
-								.input('datum', sql.DateTime, date)
+								.input('datum', sql.NVarChar, date)
 						.execute('sp_RptDnevniPregledRute');
 		},
 		// ova procedura vraca za konkretnog partnera na ruti, njegove pozicije
 		// @Sifra_Preduzeca=1,@Jezik_Id=4,@Fk_Partner=63999,@Datum='2018-05-29 00:00:00'
 		getPodaciPartnerPozicija: function(companyCode, lang_id, fk_partner, date) {
-			return pool.request()
+			return poolHubie_irb.request()
 								.input('Sifra_Preduzeca', sql.Int, companyCode)
 								.input('Jezik_Id', sql.Int, lang_id)
 								.input('Fk_Partner', sql.Int, fk_partner)
-								.input('Datum', sql.DateTime, date)
+								.input('Datum', sql.NVarChar, date)
 						.execute('sp_GetPodaciPartnerPozicija');
 		},
 		// ova procedura vraca za konkretnog partnera na ruti, i poziciju slike pozicije.
 		// @Sifra_Preduzeca=1,@Jezik_Id=4,@Fk_Partner=63999,@Fk_Pozicija=6,@Datum='2018-05-29 00:00:00'
 		getPodaciPartnerPozicijaSlikeNew: function(companyCode, lang_id, fk_partner, fk_position, date) {
-			return pool.request()
+			return poolHubie_irb.request()
 								.input('Sifra_Preduzeca', sql.Int, companyCode)
 								.input('Jezik_Id', sql.Int, lang_id)
 								.input('Fk_Partner', sql.Int, fk_partner)
 								.input('Fk_Pozicija', sql.Int, fk_position)
-								.input('Datum', sql.DateTime, date)
+								.input('Datum', sql.NVarChar, date)
 						.execute('sp_GetPodaciPartnerPozicijaSlikeNew');
 		},
 		// vraca stanje osnovnih sredstava kod kupca
@@ -195,7 +208,7 @@ module.exports = function() {
 								.input('Jezik_Id', sql.Int, lang_id)
 								.input('Fk_PoslovnaGodina', sql.Int, fiscalYear)
 								.input('Fk_Partner', sql.Int, fk_partner)
-								.input('Datum', sql.DateTime, date)
+								.input('Datum', sql.NVarChar, date)
 						.execute('sp_VratiZalihePartnerOS');
 		}
 	}
