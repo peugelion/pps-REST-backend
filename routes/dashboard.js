@@ -2,10 +2,26 @@ let express    = require('express'),
 		router  	 = express.Router(),
 		middleware = require('../middleware'),
 		hubieApi 	 = require('../models/hubie-interface').connect(),
-		moment 		 = require('moment');
+		moment 		 = require('moment'),
 		fs  = require('fs');
 
 moment.locale('sr');
+
+/* brisanje svih fajlova iz foldera */ 
+rmDir = function(dirPath) {
+	try { var files = fs.readdirSync(dirPath); }
+	catch(e) { return; }
+	if (files.length > 0)
+	  for (var i = 0; i < files.length; i++) {
+		var filePath = dirPath + '/' + files[i];
+		if (fs.statSync(filePath).isFile())
+		  fs.unlinkSync(filePath);
+		else
+		  rmDir(filePath);
+	  }
+	/* brisanje root foldera */
+	// fs.rmdirSync(dirPath); 
+  };
 
 // show landing page
 router.get('/', function(req, res) {
@@ -63,6 +79,10 @@ router.get('/route-details/:Fk_Partner', middleware.isLoggedIn, async (req, res)
 				if (slika.Slika)
 					slika.Slika = `/images/` + fileName; // replace binary image with image URL
 			});
+			
+			// rmDir(__dirname + `/../public/images/`);
+			setInterval(rmDir.bind(this,__dirname + `/../public/images/`), 360000); // brise sve slike na sat vremena
+
 			res.json(r.recordset);
 		} else if (req.query.Zalihe) {
 			// TODO input fiskalna godina
