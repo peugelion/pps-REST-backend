@@ -18,13 +18,14 @@ var indexRoutes  = require('./routes/index'),
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 // app.use(cors());
-var whitelist = ['http://localhost', 'http://localhost:4200', 'http://127.0.0.1', 'http://127.0.0.1:4200']
+var whitelist = ['http://localhost', 'http://localhost:4200', 'http://127.0.0.1', 'http://127.0.0.1:4200', 'http://10.11.2.178:4200', 'http://10.11.2.178', 'https://10.11.2.178:443']
 var corsOptions = {
 	origin: function (origin, callback) {
 	  if (whitelist.indexOf(origin) !== -1 || !origin) {
 		callback(null, true)
 	  } else {
 		callback(new Error('Not allowed by CORS'))
+		// callback	(null, true)
 	  }
 	},
 	credentials: true

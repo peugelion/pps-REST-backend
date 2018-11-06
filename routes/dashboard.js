@@ -21,7 +21,7 @@ rmDir = function(dirPath) {
 	  }
 	/* brisanje root foldera */
 	// fs.rmdirSync(dirPath); 
-  };
+};
 
 // show landing page
 router.get('/', function(req, res) {
@@ -69,31 +69,27 @@ router.get('/rptDnevniPregledRute/:Fk_Prodavac', function(req, res) { // Fk_Prod
 
 router.get('/route-details/:Fk_Partner', middleware.isLoggedIn, async (req, res) => { // Fk_Partner iz 'rptDnevniPregledRute' rute
 	try {
+		let result;
 		if (req.query.Fk_Pozicija) {
-			// console.log('/route-details/:Fk_Partner, req.query', req.query);
-			const r = await hubieApi.getPodaciPartnerPozicijaSlikeNew(1, 4, req.params.Fk_Partner, req.query.Fk_Pozicija, req.query.date) // BORCA
-			r.recordset.forEach((slika, i) => {
+			rmDir(__dirname + `/../public/images/`);	 // brisi stare slike
+			result = await hubieApi.getPodaciPartnerPozicijaSlikeNew(1, 4, req.params.Fk_Partner, req.query.Fk_Pozicija, req.query.date) // BORCA
+			result.recordset.forEach((slika, i) => {
 				const fileName = req.params.Fk_Partner + `_` +slika.Fk_PartnerPozicija+ `_` +i+ `.jpg`
 				const filePath = __dirname + `/../public/images/` + fileName;
-				fs.writeFileSync(filePath, slika.Slika); // saveImage as file in /public ... TODO remove all old images
+				fs.writeFileSync(filePath, slika.Slika); // save binary image from DB as file in /public/images/ ...
 				if (slika.Slika)
-					slika.Slika = `/images/` + fileName; // replace binary image with image URL
+					slika.Slika = `/images/` + fileName;   // ubacujem image URL u reponse, umesto binarne slike
 			});
-			
-			// rmDir(__dirname + `/../public/images/`);
-			setInterval(rmDir.bind(this,__dirname + `/../public/images/`), 360000); // brise sve slike na sat vremena
-
-			res.json(r.recordset);
 		} else if (req.query.Zalihe) {
-			// TODO input fiskalna godina
-			const r = await hubieApi.vratiZalihePartnerOS(1, 4, 16, req.params.Fk_Partner, req.query.date);
-			res.json(r.recordset);
+			result = await hubieApi.vratiZalihePartnerOS(1, 4, 16, req.params.Fk_Partner, req.query.date); // TODO input fiskalna godina (16)
 		} else {
-			const r = await hubieApi.getPodaciPartnerPozicija(1, 4, req.params.Fk_Partner, req.query.date) // BORČA
-			res.json(r.recordset);
+			result = await hubieApi.getPodaciPartnerPozicija(1, 4, req.params.Fk_Partner, req.query.date) // BORČA
 		}
+		// console.log('p:', req.params ,'q:', req.query, 'r:', JSON.stringify(r.recordset));
+		res.json(await result.recordset);
 	} catch (err) {
-	  next(err);
+		console.log('route-detail err', err)
+	  // next(err);
 	}
 });
 
