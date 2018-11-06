@@ -45,8 +45,9 @@ router.get('/', function(req, res) {
 
 // return selected-user routes
 router.get('/workerRoutes', function(req, res) {
-	console.log('req query = ', req.query);
-	 hubieApi.rptDnevniPregledRute(1, 16, 4, req.query.Fk_Radnik, req.query.datum)
+	//console.log('req query = ', req.query);
+	const parsedDate = moment(req.query.datum).format('YYYY-MM-DD'); 
+	hubieApi.rptDnevniPregledRute(1, 16, 4, req.query.Fk_Radnik, parsedDate)
 		.then(result => {
 			for (var i=0; i < result.recordset.length; i++) {
 				let route = result.recordset[i];
