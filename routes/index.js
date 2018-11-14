@@ -24,12 +24,12 @@ router.get("/", function(req, res) {
 
 // handle login
 // router.post("/login", callback);
-router.post('/login', function(req, res) {
+router.post('/api/login', function(req, res) {
 	middleware.handleLogin(req, res);
 });
 
 // logout
-router.get("/logout", function(req, res) {
+router.get("/api/logout", function(req, res) {
 	req.session.destroy(err => {
 		if(err) console.log("You are not logged out. Reason : " + err);
 	});

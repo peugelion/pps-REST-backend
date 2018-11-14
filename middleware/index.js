@@ -5,11 +5,9 @@ let hubieApi 			= require('../models/hubie-interface').connect(),
 moment.locale('sr');
 
 middlewareObj.isLoggedIn = function(req, res, next) {
-	//console.log('req', req);
-	console.log('req.sessionID', req.sessionID);
+	// console.log('middlewareObj.isLoggedIn req.sessionID', req.sessionID);
 	// if(req.sessionID && req.session.fk_appUser) {
-	if(req.sessionID) {
-		console.log('isLoggedIn true');
+	if(req.sessionID && req.session.Fk_Radnik) {
 		return next();
 	}
 	// req.flash("error", "You need to be logged in to do that!");
@@ -18,77 +16,74 @@ middlewareObj.isLoggedIn = function(req, res, next) {
 	// } else {
 	// 	res.redirect('/login');
 	// }
-	res.json({ success: 'false' })
+	// res.json({ success: 'false' })
+	console.log('isLoggedIn false, ', req.session);
+	res.sendStatus(401); // Unauthorized
 }
 
 // middlewareObj.handleLogin = function(req, res, forTicketing) {
-middlewareObj.handleLogin = function(req, res) {
-	let username = req.body.username || req.cookies.hubieLoginUsername;
-	let password = req.body.password || req.cookies.hubieLoginPassword;
+middlewareObj.handleLogin = async (req, res) => {
+	try {
+		let username = req.body.username || req.cookies.hubieLoginUsername;
+		let password = req.body.password || req.cookies.hubieLoginPassword;
 
-	// console.log(req.cookies.style);
-	console.log("req.body", req.body);
-	console.log("username", username, password);
+		// console.log("req.body", req.body);
+		// console.log("req.cookies", req.cookies);
 
-	// req.session.email = "asd@asd";
-	
-	// if (req.body.remember_me) {
-		console.log('remember_me', req.body.remember_me);
-		let cookieOptions = {
-			// path: '/',
-			httpOnly: true,
-			maxAge: 30 * 24 * 60 * 60 * 1000,   // 30 days
+		// req.session.email = "asd@asd";
+
+		// // if (req.body.remember_me) {
+		// 	console.log('remember_me', req.body.remember_me);
+		// 	let cookieOptions = {
+		// 		// path: '/',
+		// 		httpOnly: true,
+		// 		maxAge: 30 * 24 * 60 * 60 * 1000,   // 30 days
+		// 	}
+		// 	res.cookie("hubieLoginUsername", username, cookieOptions);
+		// 	res.cookie("hubieLoginPassword", password, cookieOptions);
+		// // }
+		// req.session.username = username;
+		// res.send();
+
+		result = await hubieApi.login(username, password);  // GO
+
+		req.session.username = username;
+		req.session.Fk_Radnik		  = result.recordsets[0][0].Fk_Radnik;
+		req.session.SifraPreduzeca    = result.recordsets[0][0].SifraPreduzeca;
+		req.session.Fk_PoslovnaGodina = result.recordsets[0][0].Fk_PoslovnaGodina;
+		req.session.Fk_Jezik		  = result.recordsets[0][0].Fk_Jezik;
+		// console.log('login',result.recordsets[0][0]);
+
+		if (req.body.remember_me) {
+			let cookieOptions = {
+				path: '/',
+				httpOnly: true,
+				maxAge: 30 * 24 * 60 * 60 * 1000,   // 30 days
+			}
+			// res.cookie("hubieLoginUsername", username, cookieOptions);
+			// res.cookie("hubieLoginPassword", password, cookieOptions);
+		} else {
+			req.session.taskStatuses = result.recordsets[3];
+			// res.redirect('tasks/taskOverview');
 		}
-		res.cookie("hubieLoginUsername", username, cookieOptions);
-		res.cookie("hubieLoginPassword", password, cookieOptions);
-	// }
-	req.session.username = username;
-	res.send()
-	// res.send(req.json);
-    //res.json({ message: 'hooray! welcome to our api!' });  
-	// return;
-
-	// hubieApi.login(username, password, forTicketing)
-	// 	.then(result => {
-	// 		// for (i = 0; i < result.recordsets.length; i++) {
-	// 		// 	console.log("recordsets" + i + " === ", result.recordsets[i]);
-	// 		// }
-	// 		let companyCode = result.recordsets[0][0].Sifra;
-	// 		let lang_id			= result.recordsets[1][0].FK_Jezik;
-	// 		let fk_appUser	= result.recordsets[2][0].fk_korisnikApl;
-	// 		let fk_radnik	  = result.recordsets[2][0].fk_radnik;
-	// 		req.session.companyCode  = companyCode;
-	// 		req.session.fk_appUser	 = fk_appUser;
-	// 		req.session.fk_radnik	   = fk_radnik;
-	// 		req.session.lang_id			 = lang_id;
-	// 		req.session.currentUser	 = result.recordsets[2][0].ime + " " + result.recordsets[2][0].prezime;
-	// 		// req.session.taskStatuses = result.recordsets[3];
-	// 		if (req.body.remember_me) {
-	// 			let cookieOptions = {
-	// 				path: '/',
-	// 				httpOnly: true,
-	// 				maxAge: 30 * 24 * 60 * 60 * 1000,   // 30 days
-	// 			}
-	// 			res.cookie("hubieLoginUsername", username, cookieOptions);
-	// 			res.cookie("hubieLoginPassword", password, cookieOptions);
-	// 		}
-	// 		if (forTicketing !== undefined && forTicketing !== "") {
-	// 			req.session.email 		   = result.recordsets[2][0].Email;
-	// 			req.session.fk_partner   = result.recordsets[2][0].fk_Partner;
-	// 			req.session.nazivPP 	   = result.recordsets[2][0].NazivPP;
-	// 			req.session.ulicaPP 	   = result.recordsets[2][0].UlicaPP;
-	// 			req.session.mestoPP 	   = result.recordsets[2][0].MestoPP;
-	// 			req.session.ticketStatuses = result.recordsets[3];
-	// 			// res.redirect('tickets/ticketOverview');
-	// 		} else {
-	// 			req.session.taskStatuses = result.recordsets[3];
-	// 			// res.redirect('tasks/taskOverview');
-	// 		}
-	// 	})
-	// 	.catch(err => {
-	// 		req.flash("error", err.message);
-	// 		res.redirect('/login');
-	// 	});
+		res.json(await {
+			// 'env' : result.recordsets[0][0],
+			'supervizor' : result.recordsets[1][0],
+			'subordinates' : result.recordsets[2]
+		});
+		res.send();
+	} catch (err) {
+	  	// next(err);
+		// console.log('login err', err)
+		if (err.originalError) {
+			console.log('login err msg', err.originalError.info.message);
+		}
+		req.flash("error", err.message);
+		// res.redirect('/login');
+		// res.send(400, 'missing authorization header');
+		res.sendStatus(401); // Unauthorized
+		// res.send(err);
+	};
 }
 
 module.exports = middlewareObj;

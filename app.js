@@ -18,10 +18,12 @@ var indexRoutes  = require('./routes/index'),
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 // app.use(cors());
-var whitelist = ['http://localhost', 'http://localhost:4200', 'http://127.0.0.1', 'http://127.0.0.1:4200', 'http://10.11.2.178:4200', 'http://10.11.2.178', 'https://10.11.2.178:443']
+var corsWhitelist = [
+	'http://localhost', 'http://localhost:4200', 'http://127.0.0.1', 'http://127.0.0.1:4200', 'http://10.11.2.178:4200', 'http://10.11.2.178', 'https://10.11.2.178:443'
+]
 var corsOptions = {
 	origin: function (origin, callback) {
-	  if (whitelist.indexOf(origin) !== -1 || !origin) {
+	  if (corsWhitelist.indexOf(origin) !== -1 || !origin) {
 		callback(null, true)
 	  } else {
 		callback(new Error('Not allowed by CORS'))
@@ -33,7 +35,8 @@ var corsOptions = {
 app.use(cors(corsOptions));
 
 // with this I'm serving the public directory
-app.use(express.static(__dirname + "/public"));
+const maxAge = 7 * 24 * 3600 * 1000;    // 7 days, 3600000msec == 1hour
+app.use(express.static(__dirname + "/public", { maxAge: maxAge }));
 
 // methodOverride provides the override for PUT and DELETE HTTP methods
 app.use(methodOverride("_method"));
@@ -46,7 +49,8 @@ app.use(session({
 		path: '/',
 		httpOnly: true,
 		secure: false,
-		maxAge: 30 * 60 * 1000,
+		// maxAge: 30 * 60 * 1000,
+		maxAge: 30 * 24 * 60 * 60 * 1000,   // 30 days
 	}
 }));
 
@@ -68,7 +72,8 @@ app.use(function(req, res, next) {
 
 // use the REST routes
 app.use(indexRoutes); 
-app.use("/dashboard", dashboard); 
+// app.use("/dashboard", dashboard);
+app.use("/api/dashboard", dashboard); /* da se ng ruta i proxy api putanja razlikuju, sve api pozive sam prebacio na /api/ */
 //app.use("/tasks", taskRoutes); 
 //app.use("/tickets", ticketRoutes); 
 

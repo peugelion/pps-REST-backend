@@ -24,30 +24,30 @@ rmDir = function(dirPath) {
 };
 
 // show landing page
-router.get('/', function(req, res) {
-	let resultObj = {};
-	console.log(' / ruta ', req.query);
+// router.get('/', middleware.isLoggedIn, function(req, res) {
+// 	let resultObj = {};
+// 	// console.log(' / ruta ', req.query);
 
-  hubieApi.vratiRS(1, 4, '350950', 'm_radnik_SisPosao', 52)
-		.then(result => {
-			resultObj.supervisorData = result.recordset[0];
-			// calling hubieApi.vratiPodredjeneRadnike() returns a new Promise
-			return hubieApi.vratiPodredjeneRadnike(1, 4, 350950);
-		})
-		.then(result => {
-			resultObj.subordinates = result.recordset;
-			res.json(resultObj);
-		})
-		.catch(err => {
-			console.log(err);
-		});
-});
+//   hubieApi.vratiRS(1, 4, '350950', 'm_radnik_SisPosao', 52)
+// 		.then(result => {
+// 			resultObj.supervisorData = result.recordset[0];
+// 			// calling hubieApi.vratiPodredjeneRadnike() returns a new Promise
+// 			return hubieApi.vratiPodredjeneRadnike(1, 4, 350950);
+// 		})
+// 		.then(result => {
+// 			resultObj.subordinates = result.recordset;
+// 			res.json(resultObj);
+// 		})
+// 		.catch(err => {
+// 			console.log(err);
+// 		});
+// });
 
 // return selected-user routes
-router.get('/workerRoutes', function(req, res) {
-	//console.log('req query = ', req.query);
-	const parsedDate = moment(req.query.datum).format('YYYY-MM-DD'); 
-	hubieApi.rptDnevniPregledRute(1, 16, 4, req.query.Fk_Radnik, parsedDate)
+router.get('/workerRoutes', middleware.isLoggedIn, function(req, res) {
+	const SifraPreduzeca = req.session.SifraPreduzeca, Fk_PoslovnaGodina = req.session.Fk_PoslovnaGodina, Fk_Jezik = req.session.Fk_Jezik;
+	const parsedDate = moment(req.query.datum).format('YYYY-MM-DD');
+	hubieApi.rptDnevniPregledRute(SifraPreduzeca, Fk_PoslovnaGodina, Fk_Jezik, req.query.Fk_Radnik, parsedDate)
 		.then(result => {
 			for (var i=0; i < result.recordset.length; i++) {
 				let route = result.recordset[i];
@@ -62,29 +62,35 @@ router.get('/workerRoutes', function(req, res) {
 		});
 });
 
-router.get('/rptDnevniPregledRute/:Fk_Prodavac', function(req, res) { // Fk_Prodavac je Fk_Radnik za 'vratiRS' rute
-  hubieApi.rptDnevniPregledRute(1, 16, 4, req.params.Fk_Prodavac, req.query.date)
+router.get('/rptDnevniPregledRute/:Fk_Prodavac', middleware.isLoggedIn, function(req, res) { // Fk_Prodavac je Fk_Radnik za 'vratiRS' rute
+	const SifraPreduzeca = req.session.SifraPreduzeca, Fk_PoslovnaGodina = req.session.Fk_PoslovnaGodina, Fk_Jezik = req.session.Fk_Jezik;
+ 	hubieApi.rptDnevniPregledRute(SifraPreduzeca, Fk_PoslovnaGodina, Fk_Jezik, req.params.Fk_Prodavac, req.query.date)
 		.then(r => res.json(r.recordset))
 		.catch(err => console.log('/rptDnevniPregledRute/:Fk_Prodavac', req.query, req.params, err));
 });
 
 router.get('/route-details/:Fk_Partner', middleware.isLoggedIn, async (req, res) => { // Fk_Partner iz 'rptDnevniPregledRute' rute
 	try {
+		const SifraPreduzeca = req.session.SifraPreduzeca, Fk_PoslovnaGodina = req.session.Fk_PoslovnaGodina, Fk_Jezik = req.session.Fk_Jezik;
 		let result;
+		const Fk_Partner = req.params.Fk_Partner;
 		if (req.query.Fk_Pozicija) {
 			rmDir(__dirname + `/../public/images/`);	 // brisi stare slike
-			result = await hubieApi.getPodaciPartnerPozicijaSlikeNew(1, 4, req.params.Fk_Partner, req.query.Fk_Pozicija, req.query.date) // BORCA
-			result.recordset.forEach((slika, i) => {
-				const fileName = req.params.Fk_Partner + `_` +slika.Fk_PartnerPozicija+ `_` +i+ `.jpg`
-				const filePath = __dirname + `/../public/images/` + fileName;
-				fs.writeFileSync(filePath, slika.Slika); // save binary image from DB as file in /public/images/ ...
-				if (slika.Slika)
-					slika.Slika = `/images/` + fileName;   // ubacujem image URL u reponse, umesto binarne slike
+			result = await hubieApi.getPodaciPartnerPozicijaSlikeNew(SifraPreduzeca, Fk_Jezik, Fk_Partner, req.query.Fk_Pozicija, req.query.date) // BORCA
+			result.recordset.forEach((entry, i) => {
+				if (entry.Slika) {
+					const fileName = req.params.Fk_Partner + `_` +entry.Fk_PartnerPozicija+ `_` +i+ `.jpg`
+					const filePath = __dirname + `/../public/images/` + fileName;
+					fs.writeFileSync(filePath, entry.Slika); // save binary image from DB as file in /public/images/
+					entry.Slika = `/images/` + fileName;     // replace sql binary buffer with URL path
+				// } else {
+				// 	entry.Slika = `/assets/404.svg`;
+				}
 			});
 		} else if (req.query.Zalihe) {
-			result = await hubieApi.vratiZalihePartnerOS(1, 4, 16, req.params.Fk_Partner, req.query.date); // TODO input fiskalna godina (16)
+			result = await hubieApi.vratiZalihePartnerOS(SifraPreduzeca, Fk_PoslovnaGodina, Fk_Jezik, Fk_Partner, req.query.date); // TODO input fiskalna godina (16)
 		} else {
-			result = await hubieApi.getPodaciPartnerPozicija(1, 4, req.params.Fk_Partner, req.query.date) // BORČA
+			result = await hubieApi.getPodaciPartnerPozicija(SifraPreduzeca, Fk_Jezik, Fk_Partner, req.query.date) // BORČA
 		}
 		// console.log('p:', req.params ,'q:', req.query, 'r:', JSON.stringify(r.recordset));
 		res.json(await result.recordset);
