@@ -129,6 +129,30 @@ module.exports = function() {
 								.input('Fk_Partner', sql.Int, fk_partner)
 								.input('Datum', sql.NVarChar, date)
 						.execute('sp_VratiZalihePartnerOS');
+		},
+
+		insertKomercijalistaPravo: function(SifraPreduzeca, user, Fk_Radnik, Fk_Partner, date, Fk_St_670) {
+			// console.log('hube-interface.js login', user, pass);
+			return poolHubie_web.request()
+								.input('SifraPreduzeca', sql.Int, SifraPreduzeca)
+								 .input('Korisnik', sql.NVarChar, user)
+								 .input('SifraRadnik', sql.Int, Fk_Radnik)
+								 .input('SifraPartnera', sql.Int, Fk_Partner) // Fk_Partner
+								 .input('DatumPosete', sql.NVarChar, date)
+								 .input('Fk_St_670', sql.Int, Fk_St_670)
+						.execute('sv_InsertKomercijalistaPravo');
+		},
+		rptProdaja_DailySalesKPIsReportByCustomerBySKU: function(SifraPreduzeca, user, Fk_Radnik, Fk_Partner, date, Fk_St_670) {
+			// console.log('hube-interface.js login', user, pass);
+			return poolHubie_web.request()
+								.input('SifraPreduzeca', sql.Int, SifraPreduzeca)
+								 .input('Korisnik', sql.NVarChar, user)
+								 .input('SifraRadnik', sql.Int, Fk_Radnik)
+								 .input('SifraPartnera', sql.Int, Fk_Partner) // Fk_Partner
+								 .input('DatumPosete', sql.NVarChar, date)
+								 .input('Fk_St_670', sql.Int, Fk_St_670)
+						.execute('sp_RptProdaja_DailySalesKPIsReportByCustomerBySKU');
 		}
+		
 	}
 }();

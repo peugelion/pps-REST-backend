@@ -52,7 +52,8 @@ middlewareObj.handleLogin = async (req, res) => {
 		req.session.SifraPreduzeca    = result.recordsets[0][0].SifraPreduzeca;
 		req.session.Fk_PoslovnaGodina = result.recordsets[0][0].Fk_PoslovnaGodina;
 		req.session.Fk_Jezik		  = result.recordsets[0][0].Fk_Jezik;
-		// console.log('login',result.recordsets[0][0]);
+		// console.log('login',result.recordsets[1][0]);
+		req.session.Supervizor		  = result.recordsets[1][0].Sifra;
 
 		if (req.body.remember_me) {
 			let cookieOptions = {
@@ -73,16 +74,13 @@ middlewareObj.handleLogin = async (req, res) => {
 		});
 		res.send();
 	} catch (err) {
-	  	// next(err);
-		// console.log('login err', err)
-		if (err.originalError) {
-			console.log('login err msg', err.originalError.info.message);
-		}
+		// next(err);
 		req.flash("error", err.message);
-		// res.redirect('/login');
-		// res.send(400, 'missing authorization header');
-		res.sendStatus(401); // Unauthorized
-		// res.send(err);
+		if (err.message === 'IncorrectLoginData') {
+			res.sendStatus(401); // Unauthorized
+		} else {
+			res.send(400, err.message);
+		}
 	};
 }
 
