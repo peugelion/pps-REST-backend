@@ -142,16 +142,26 @@ module.exports = function() {
 								 .input('Fk_St_670', sql.Int, Fk_St_670)
 						.execute('sv_InsertKomercijalistaPravo');
 		},
-		rptProdaja_DailySalesKPIsReportByCustomerBySKU: function(SifraPreduzeca, user, Fk_Radnik, Fk_Partner, date, Fk_St_670) {
-			// console.log('hube-interface.js login', user, pass);
-			return poolHubie_web.request()
-								.input('SifraPreduzeca', sql.Int, SifraPreduzeca)
-								 .input('Korisnik', sql.NVarChar, user)
-								 .input('SifraRadnik', sql.Int, Fk_Radnik)
-								 .input('SifraPartnera', sql.Int, Fk_Partner) // Fk_Partner
-								 .input('DatumPosete', sql.NVarChar, date)
-								 .input('Fk_St_670', sql.Int, Fk_St_670)
+		rptProdaja_DailySalesKPIsReportByCustomerBySKU: function(SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, SifraPARTNER, Dali8OZ) {
+			console.log('hube-interface.js rptProdaja_DailySalesKPIsReportByCustomerBySKU');
+			console.log(SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, SifraPARTNER, Dali8OZ);
+			return poolHubie.request()
+								.input('Sifra_Preduzeca', sql.Int, SifraPreduzeca)
+								.input('Jezik_id', sql.NVarChar, Fk_Jezik)
+								.input('Fk_PoslovnaGodina', sql.Int, Fk_PoslovnaGodina)
+								.input('Datum_do', sql.NVarChar, Datum_do)
+								.input('SifraPARTNER', sql.NVarChar, SifraPARTNER) // Fk_Partner
+								.input('Dali8OZ', sql.Int, Dali8OZ)
 						.execute('sp_RptProdaja_DailySalesKPIsReportByCustomerBySKU');
+		},
+		vratiRadnikPodredjenPartner: function(SifraPreduzeca, Fk_Jezik, Sifra_Radnika) {
+			console.log('hube-interface.js vratiRadnikPodredjenPartner');
+			console.log(SifraPreduzeca, Fk_Jezik, Sifra_Radnika);
+			return poolHubie.request()
+								.input('Sifra_Preduzeca', sql.Int, SifraPreduzeca)
+								.input('Jezik_id', sql.NVarChar, Fk_Jezik)
+								.input('Sifra_Radnika', sql.Int, Sifra_Radnika)
+						.execute('sp_VratiRadnikPodredjenPartner');
 		}
 		
 	}

@@ -12,7 +12,7 @@ moment.locale('sr');
 rmDir = (dirPath) => {
 	try { var files = fs.readdirSync(dirPath); }
 	catch(e) { return; }
-	if (files.length > 0)
+	if (files.length > 0) {
 	  for (var i = 0; i < files.length; i++) {
 		var filePath = dirPath + '/' + files[i];
 		if (fs.statSync(filePath).isFile())
@@ -20,8 +20,8 @@ rmDir = (dirPath) => {
 		else
 		  rmDir(filePath);
 	  }
-	/* brisanje root foldera */
-	// fs.rmdirSync(dirPath); 
+	// fs.rmdirSync(dirPath); /* brisanje root foldera */
+	}
 };
 
 /* ulaz date u srpskoj ili full ISO formi, vraca short ISO, eg. '2018-05-29' */
@@ -56,7 +56,7 @@ parseSrbDateParam = (date) => {
 // });
 
 // return selected-user routes
-router.get('/workerRoutes', authMW.isLoggedIn, mcacheMW.cache(15), function(req, res) {
+router.get('/workerRoutes', authMW.isLoggedIn, mcacheMW.cache(9915), function(req, res) {
 	const SifraPreduzeca = req.session.SifraPreduzeca, Fk_PoslovnaGodina = req.session.Fk_PoslovnaGodina, Fk_Jezik = req.session.Fk_Jezik;
 	const parsedDate = moment(req.query.datum).format('YYYY-MM-DD');
 	hubieApi.rptDnevniPregledRute(SifraPreduzeca, Fk_PoslovnaGodina, Fk_Jezik, req.query.Fk_Radnik, parsedDate)
@@ -107,46 +107,64 @@ router.get('/route-details/:Fk_Partner', authMW.isLoggedIn, mcacheMW.cache(15), 
 });
 
 // insertKomercijalistaPravo (SifraPreduzeca, username, Fk_Radnik,  Fk_Partner, date, Fk_St_670)
-router.post('/insertKomercijalistaPravo/', authMW.isLoggedIn, async (req, res) => {
+router.post('/route-details/:Fk_Partner', authMW.isLoggedIn, async (req, res) => {
 	try {
 		const SifraPreduzeca = req.session.SifraPreduzeca,
 			username         = req.session.username;
-			// Supervizor		 = req.session.Supervizor,
 		const Fk_RadnikSifra = req.body.Fk_RadnikSifra,
-			Fk_Partner       = req.body.Fk_Partner,
-			date             = parseSrbDateParam(req.body.date).toString(),	// date          = req.body.date,
+			Fk_Partner       = req.params.Fk_Partner,
+			date             = parseSrbDateParam(req.body.date).toString(),
 			Fk_St_670        = parseInt(req.body.Fk_St_670, 10);
 		
-		console.log('insertKomercijalistaPravo INPUT');
-		console.log(SifraPreduzeca, username || Supervizor, Fk_RadnikSifra, Fk_Partner, date, Fk_St_670);
-
+		console.log('insertKomercijalistaPravo INPUT');		// console.log(SifraPreduzeca, username || Supervizor, Fk_RadnikSifra, Fk_Partner, date, Fk_St_670);
 		const result = await hubieApi.insertKomercijalistaPravo(SifraPreduzeca, username,   Fk_RadnikSifra, Fk_Partner, date, Fk_St_670);
 		console.log('result', result, result.length);
-		res.json(await result.recordset);
+		res.json(await result);
 	} catch (err) {
 		console.log('route-insertKomercijalistaPravo err', err);
 		res.json(err);
 	}
 });
 
-router.get('/dailySalesKPIsReportByCustomerBySKU/', authMW.isLoggedIn, mcacheMW.cache(15), async (req, res) => {
+/* KPIs report */
+
+router.get('/dailySalesKPIsReportByCustomerBySKU/', authMW.isLoggedIn, mcacheMW.cache(115), async (req, res) => {
 	try {
-		console.log('dailySalesKPIsReportByCustomerBySKU USO');
+		// console.log('dailySalesKPIsReportByCustomerBySKU USO', req.query);
 		const SifraPreduzeca = req.session.SifraPreduzeca, Fk_Jezik = req.session.Fk_Jezik, Fk_PoslovnaGodina = req.session.Fk_PoslovnaGodina;
-		const Datum_do = req.params.Datum_do, SifraPARTNER = req.params.SifraPARTNER;
+		const Datum_do = parseSrbDateParam(req.query.Datum_do).toString(), SifraPARTNER = req.query.SifraPARTNER;
 		const Dali8OZ = 0;
 		if (!Datum_do || !SifraPARTNER) {
 			res.json({'success': 'false'});
 			return
-		}
-		console.log('inpputs', Datum_do, SifraPARTNER);
+		};
 		let result = await hubieApi.rptProdaja_DailySalesKPIsReportByCustomerBySKU(SifraPreduzeca, Fk_Jezik,Fk_PoslovnaGodina, Datum_do, SifraPARTNER, Dali8OZ);
+		// console.log('result.recordset', result.recordset);
+		res.json(await result.recordset);
+	} catch (err) {
+		console.log('dailySalesKPIsReportByCustomerBySKU err', err.message);
+		res.json(err.message);
+	}
+});
+
+router.get('/radnikPodredjenPartner/:Sifra_Radnika', authMW.isLoggedIn, mcacheMW.cache(15), async (req, res) => {
+	try {
+		console.log('radnikPodredjenPartner USO', req.query);
+		const SifraPreduzeca = req.session.SifraPreduzeca, Fk_Jezik = req.session.Fk_Jezik;
+		const Sifra_Radnika = parseInt(req.params.Sifra_Radnika, 10);
+		if (!Sifra_Radnika) {
+			res.json({'success': 'false'});
+			return
+		};
+		let result = await hubieApi.vratiRadnikPodredjenPartner(SifraPreduzeca, Fk_Jezik, Sifra_Radnika);
 		console.log('result.recordset', result.recordset);
 		res.json(await result.recordset);
 	} catch (err) {
-		console.log('dailySalesKPIsReportByCustomerBySKU err', err);
-		res.json(err);
+		console.log('vratiRadnikPodredjenPartner err', err.message);
+		res.json(err.message);
 	}
 });
+
+
 
 module.exports = router;
