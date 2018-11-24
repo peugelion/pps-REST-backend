@@ -79,7 +79,8 @@ middlewareObj.handleLogin = async (req, res) => {
 		if (err.message === 'IncorrectLoginData') {
 			res.sendStatus(401); // Unauthorized
 		} else {
-			res.send(400, err.message);
+			// res.send(400, err.message);
+			res.status(400).send(err.message)
 		}
 	};
 }

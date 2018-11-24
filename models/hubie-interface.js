@@ -33,18 +33,21 @@ module.exports = function() {
 				if (err) {
 					connError.hasError = true;
 					connError.error = err.originalError;
+					poolHubie.close();
 				}
 			});
 			poolHubie_irb = new sql.ConnectionPool(configHubie_irb, err => {
 				if (err) {
 					connError.hasError = true;
 					connError.error = err.originalError;
+					poolHubie_irb.close();
 				}
 			});
 			poolHubie_web = new sql.ConnectionPool(configHubie_web, err => {
 				if (err) {
 					connError.hasError = true;
 					connError.error = err.originalError;
+					poolHubie_web.close();
 				}
 			});
 			poolHubie.on('error', err => console.log('sql errors', err));

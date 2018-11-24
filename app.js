@@ -37,7 +37,15 @@ app.use(session({
 }));
 
 app.use(cookieParser());
-app.use(compression());  // gzip html\js\css mime type response
+app.use(compression());  // gzip html\js\css response
+// app.use(compression({filter: shouldCompress}));  // gzip html\js\css response
+// function shouldCompress (req, res) {
+// 	if (req.headers['x-no-compression']) {
+// 		console.log('x-no-compression');
+// 	  return false // don't compress responses with this request header
+// 	}
+// 	return compression.filter(req, res)// fallback to standard filter function
+// }
 
 // var corsWhitelist = ['http://localhost', 'http://localhost:4200', 'http://127.0.0.1', 'http://127.0.0.1:3000',  'http://127.0.0.1:4200', 'http://10.11.2.178:4200', 'http://10.11.2.178', 'https://10.11.2.178:443', 'http://10.11.2.178:3000']
 // var corsOptions = {

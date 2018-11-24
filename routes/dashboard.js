@@ -116,7 +116,7 @@ router.post('/route-details/:Fk_Partner', authMW.isLoggedIn, async (req, res) =>
 			date             = parseSrbDateParam(req.body.date).toString(),
 			Fk_St_670        = parseInt(req.body.Fk_St_670, 10);
 		
-		console.log('insertKomercijalistaPravo INPUT');		// console.log(SifraPreduzeca, username || Supervizor, Fk_RadnikSifra, Fk_Partner, date, Fk_St_670);
+		console.log('insertKomercijalistaPravo INPUT', req.session);		// console.log(SifraPreduzeca, username || Supervizor, Fk_RadnikSifra, Fk_Partner, date, Fk_St_670);
 		const result = await hubieApi.insertKomercijalistaPravo(SifraPreduzeca, username,   Fk_RadnikSifra, Fk_Partner, date, Fk_St_670);
 		console.log('result', result, result.length);
 		res.json(await result);
@@ -128,13 +128,14 @@ router.post('/route-details/:Fk_Partner', authMW.isLoggedIn, async (req, res) =>
 
 /* KPIs report */
 
-router.get('/dailySalesKPIsReportByCustomerBySKU/', authMW.isLoggedIn, mcacheMW.cache(115), async (req, res) => {
+router.get('/KPIsReport/dailySalesByCustomerBySKU/:SifraPARTNER', authMW.isLoggedIn, mcacheMW.cache(60 * 5), async (req, res) => {
 	try {
 		// console.log('dailySalesKPIsReportByCustomerBySKU USO', req.query);
 		const SifraPreduzeca = req.session.SifraPreduzeca, Fk_Jezik = req.session.Fk_Jezik, Fk_PoslovnaGodina = req.session.Fk_PoslovnaGodina;
-		const Datum_do = parseSrbDateParam(req.query.Datum_do).toString(), SifraPARTNER = req.query.SifraPARTNER;
+		const SifraPARTNER = req.params.SifraPARTNER;
+		const Datum_do = parseSrbDateParam(req.query.Datum_do).toString();
 		const Dali8OZ = 0;
-		if (!Datum_do || !SifraPARTNER) {
+		if (!SifraPARTNER) {
 			res.json({'success': 'false'});
 			return
 		};
@@ -147,18 +148,34 @@ router.get('/dailySalesKPIsReportByCustomerBySKU/', authMW.isLoggedIn, mcacheMW.
 	}
 });
 
-router.get('/radnikPodredjenPartner/:Sifra_Radnika', authMW.isLoggedIn, mcacheMW.cache(15), async (req, res) => {
+router.get('/KPIsReport/radnikPodredjenPartner/', authMW.isLoggedIn, mcacheMW.cache(60 * 5), async (req, res) => {
 	try {
-		console.log('radnikPodredjenPartner USO', req.query);
+		console.log('radnikPodredjenPartner USO', req.query, req.session.Supervizor);
 		const SifraPreduzeca = req.session.SifraPreduzeca, Fk_Jezik = req.session.Fk_Jezik;
-		const Sifra_Radnika = parseInt(req.params.Sifra_Radnika, 10);
+		// const Sifra_Radnika = parseInt(req.session.Sifra_Radnika, 10);
+		const Sifra_Radnika = req.session.Supervizor;
 		if (!Sifra_Radnika) {
 			res.json({'success': 'false'});
 			return
 		};
 		let result = await hubieApi.vratiRadnikPodredjenPartner(SifraPreduzeca, Fk_Jezik, Sifra_Radnika);
-		console.log('result.recordset', result.recordset);
-		res.json(await result.recordset);
+		// result.recordset = result.recordset.map((entry, i) => {
+		// 	entry.Naziv = entry.Naziv.join(', ');
+		// 	delete entry.Sifra;
+		// 	delete entry.Ulica_i_Broj;
+		// 	return entry;
+		// });
+
+		// result.recordset = result.recordset.map(({Sifra, Ulica_i_Broj, ...result}) => {
+		// 	result.Naziv = result.Naziv.join(', '); // spajam ime prodavnice i grad
+		// 	return result;
+		// });
+		// res.json(await result.recordset);
+
+		res.json(await result.recordset.map(({Sifra, Ulica_i_Broj, ...result}) => {
+			result.Naziv = result.Naziv.join(', '); // spajam ime prodavnice i grad
+			return result;
+		}));
 	} catch (err) {
 		console.log('vratiRadnikPodredjenPartner err', err.message);
 		res.json(err.message);
