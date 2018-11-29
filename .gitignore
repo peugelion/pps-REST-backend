@@ -12,3 +12,4 @@ public/
 daemon/
 .env
 _instalacija/
+package-lock.json
