@@ -148,32 +148,39 @@ router.get('/KPIsReport/dailySalesByCustomerBySKU/:SifraPARTNER', authMW.isLogge
 	}
 });
 
-router.get('/KPIsReport/radnikPodredjenPartner/', authMW.isLoggedIn, mcacheMW.cache(60 * 5), async (req, res) => {
+router.get('/KPIsReport/radnikPodredjenPartner/:searchQuery', authMW.isLoggedIn, mcacheMW.cache(60 * 5), async (req, res) => {
 	try {
 		console.log('radnikPodredjenPartner USO', req.query, req.session.Supervizor);
 		const SifraPreduzeca = req.session.SifraPreduzeca, Fk_Jezik = req.session.Fk_Jezik;
 		// const Sifra_Radnika = parseInt(req.session.Sifra_Radnika, 10);
 		const Sifra_Radnika = req.session.Supervizor;
+		const searchQuery = req.params.searchQuery;
 		if (!Sifra_Radnika) {
 			res.json({'success': 'false'});
 			return
 		};
-		let result = await hubieApi.vratiRadnikPodredjenPartner(SifraPreduzeca, Fk_Jezik, Sifra_Radnika);
+		let result = await hubieApi.vratiRadnikPodredjenPartner(SifraPreduzeca, Fk_Jezik, Sifra_Radnika, searchQuery);
 		// result.recordset = result.recordset.map((entry, i) => {
 		// 	entry.Naziv = entry.Naziv.join(', ');
 		// 	delete entry.Sifra;
 		// 	delete entry.Ulica_i_Broj;
 		// 	return entry;
 		// });
-
-		// result.recordset = result.recordset.map(({Sifra, Ulica_i_Broj, ...result}) => {
-		// 	result.Naziv = result.Naziv.join(', '); // spajam ime prodavnice i grad
-		// 	return result;
-		// });
 		// res.json(await result.recordset);
 
-		res.json(await result.recordset.map(({Sifra, Ulica_i_Broj, ...result}) => {
-			result.Naziv = result.Naziv.join(', '); // spajam ime prodavnice i grad
+		// res.json(await result.recordset.map(({Sifra, Ulica_i_Broj, ...result}) => {
+		// 	result.Naziv = result.Naziv.join(', '); // spajam ime prodavnice i grad
+		// 	return result;
+		// }));
+		res.json(await result.recordset.splice(0, 100).map(({FK_Partner, ...result}) => {
+			// result.Ulica_i_Broj = (result.Ulica_i_Broj === "NEMA") ?  "" : result.Ulica_i_Broj + ', ' + result.Naziv[1];
+			if (result.Ulica_i_Broj === "NEMA") {
+				result.Ulica_i_Broj = result.Naziv[1];        // grad
+			} else {
+				result.Ulica_i_Broj += ', ' + result.Naziv[1]; // ulica, grad
+			}
+			result.Naziv = result.Naziv[0]; // spajam ime prodavnice i grad
+			// result.Naziv = result.Naziv.join(', '); // spajam ime prodavnice i grad
 			return result;
 		}));
 	} catch (err) {

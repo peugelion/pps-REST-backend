@@ -1,10 +1,10 @@
 var sql = require('mssql');
 
 const configHubie = {
-	user: 'sa',
-	password: 'password',
-  	server: '10.11.2.19',
-  	database: 'Hubie',
+	user:     process.env.DB_USER  || 'sa',
+	password: process.env.DB_PASS  || 'password',
+	server:   process.env.DB_HOST  || '127.0.0.1',
+  	database: process.env.DB_HUBIE || 'Hubie',
   	connectionTimeout: 5000,
   	requestTimeout: 100000,
   	pool: {
@@ -13,22 +13,21 @@ const configHubie = {
 	},
 	options: {
 		encrypt: true,
-		instanceName: 'sql2008r2d'
+		instanceName: process.env.DB_INSTANCE || ''
 	}
 }
 const configHubie_irb = Object.assign({}, configHubie);
 const configHubie_web = Object.assign({}, configHubie);
-configHubie_irb.database = 'Hubie_IRB';
-configHubie_web.database = 'Hubie_Web';
+configHubie_irb.database = process.env.DB_HUBIE_IRB || 'Hubie_IRB';
+configHubie_web.database = process.env.DB_HUBIE_WEB || 'Hubie_Web';
 
 
 module.exports = function() {
 	let connError = {};
-	let poolHubie = null;
-	let poolHubie_irb = null;
-	let poolHubie_web = null;
+	let poolHubie, poolHubie_irb, poolHubie_web = null;
 	return {
 		connect: function() {
+			// console.log('poolHubie', poolHubie);
 			poolHubie = new sql.ConnectionPool(configHubie, err => {
 				if (err) {
 					connError.hasError = true;
@@ -68,7 +67,7 @@ module.exports = function() {
 		// },
 
 		login: function(user, pass) {
-			// console.log('hube-interface.js login', user, pass);
+			console.log('hube-interface.js login', user);
 			return poolHubie_web.request()
 								 .input('Username', sql.NVarChar, user)
 								 .input('Password', sql.NVarChar, pass)
@@ -157,13 +156,14 @@ module.exports = function() {
 								.input('Dali8OZ', sql.Int, Dali8OZ)
 						.execute('sp_RptProdaja_DailySalesKPIsReportByCustomerBySKU');
 		},
-		vratiRadnikPodredjenPartner: function(SifraPreduzeca, Fk_Jezik, Sifra_Radnika) {
+		vratiRadnikPodredjenPartner: function(SifraPreduzeca, Fk_Jezik, Sifra_Radnika, searchQuery) {
 			console.log('hube-interface.js vratiRadnikPodredjenPartner');
-			console.log(SifraPreduzeca, Fk_Jezik, Sifra_Radnika);
+			console.log(SifraPreduzeca, Fk_Jezik, Sifra_Radnika, searchQuery);
 			return poolHubie.request()
 								.input('Sifra_Preduzeca', sql.Int, SifraPreduzeca)
 								.input('Jezik_id', sql.NVarChar, Fk_Jezik)
 								.input('Sifra_Radnika', sql.Int, Sifra_Radnika)
+								.input('Search', sql.NVarChar, searchQuery)
 						.execute('sp_VratiRadnikPodredjenPartner');
 		}
 		

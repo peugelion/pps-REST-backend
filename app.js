@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+require('dotenv').config() // https://github.com/motdotla/dotenv
 var express 	 		= require("express"),
 		app				= express(),
 		bodyParser 		= require('body-parser'),
@@ -98,6 +99,6 @@ app.use(function(req, res, next) {
 const maxAge = 7 * 24 * 3600 * 1000;    // 7 days, 3600000msec == 1hour
 app.use(express.static(__dirname + "/public", { maxAge: maxAge }));
 
-app.listen(3000, function() {
+app.listen(process.env.HTTP_PORT || 3000, function() {
 	console.log('PPS supervisor app started!');
 });

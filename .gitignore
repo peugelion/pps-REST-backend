@@ -10,3 +10,5 @@ nbproject/
 public/images
 public/
 daemon/
+.env
+_instalacija/
