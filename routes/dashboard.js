@@ -5,11 +5,12 @@ let express		= require('express'),
 	hubieApi 	= require('../models/hubie-interface').connect(),
 	moment 		= require('moment'),
 	fs			= require('fs');
+	const sharp = require('sharp');
 
 moment.locale('sr');
 
 /* brisanje svih fajlova iz foldera */ 
-rmDir = (dirPath) => {
+const rmDir = (dirPath) => {
 	try { var files = fs.readdirSync(dirPath); }
 	catch(e) { return; }
 	if (files.length > 0) {
@@ -24,8 +25,36 @@ rmDir = (dirPath) => {
 	}
 };
 
+/* input jpg buffer, output .webp or .jpg, return filePath */
+const parseImage = (jpgBuffer, filePath, fileName) => {
+	const startTime = new Date(); // timer start
+	const end = () => {
+		const timeDiff = new Date() - startTime; //in ms
+		console.log('Img resize\\convert takes ' +timeDiff+ ' ms ' +fileName+ '.webp' );
+	};
+	
+	// console.log('pre jpg');
+//   fs.writeFileSync(filePath + `.jpg`, entry.Slika); // save binary image from DB as file in /public/images/
+//   console.log('polse jpg');
+//   end(); /* merim vreme potrebno za image resize + convert to .webp */
+//   return `/images/` + fileName+ `.jpg`;     // replace sql binary buffer with URL path
+	return sharp(jpgBuffer)
+		.resize(830, 1106, { fit: "inside" })
+		.sharpen()
+		.toFile(filePath + `.webp`)
+		.then(info => {			// console.log('resize', info);
+			end(); /* merim vreme potrebno za image resize + convert to .webp */
+			return `/images/` + fileName+ `.webp`;     // replace sql binary buffer with URL path
+		})
+		.catch(err => {			console.log('err', err);
+			fs.writeFileSync(filePath + `.jpg`, entry.Slika); // save binary image from DB as file in /public/images/
+			return `/images/` + fileName+ `.jpg`;     // replace sql binary buffer with URL path
+		});
+};
+
+
 /* ulaz date u srpskoj ili full ISO formi, vraca short ISO, eg. '2018-05-29' */
-parseSrbDateParam = (date) => {
+const parseSrbDateParam = (date) => {
 	if (date && date.includes(' ')) {
 		return date.split(' ')[0].split('.').reverse().join('-');     // eg '29.05.2018' ili '29.05.2018 10:30:45'
 	} else if (date && date.includes('T')) {
@@ -61,12 +90,27 @@ router.get('/workerRoutes', authMW.isLoggedIn, mcacheMW.cache(9915), function(re
 	const parsedDate = moment(req.query.datum).format('YYYY-MM-DD');
 	hubieApi.rptDnevniPregledRute(SifraPreduzeca, Fk_PoslovnaGodina, Fk_Jezik, req.query.Fk_Radnik, parsedDate)
 		.then(result => {
-			for (var i=0; i < result.recordset.length; i++) {
-				let route = result.recordset[i];
-				route.DatumPocetka = moment(route.DatumPocetka).utc().format('DD.MM.YYYY HH:mm:ss');
-				route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('DD.MM.YYYY HH:mm:ss');
-				route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('HH:mm:ss');
-			}			
+			// console.log('req.query.parsirano', req.query.parsirano);
+			// if (req.query.parsirano) {
+			// 	console.log('WR parsirano');
+			// 	for (var i=0; i < result.recordset.length; i++) {
+			// 		let route = result.recordset[i];
+			// 		route.DatumPocetka = moment(route.DatumPocetka).utc().format('HH:mm');
+			// 		route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('HH:mm');
+			// 		route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('H:mm:ss');
+			// 	}
+			// } else {
+				for (var i=0; i < result.recordset.length; i++) {
+					let route = result.recordset[i];
+					// route.DatumPocetka = moment(route.DatumPocetka).utc().format('DD.MM.YYYY HH:mm:ss');
+					// route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('DD.MM.YYYY HH:mm:ss');
+					// route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('HH:mm:ss');
+					route.Naziv = route.Naziv.split(route.Mesto)[0];
+					route.DatumPocetka = moment(route.DatumPocetka).utc().format('HH:mm');
+					route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('HH:mm');
+					route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('mm:ss');
+				}
+			// }
 			res.json({"workerRoutes": result.recordset});
 		})
 		.catch(err => {
@@ -81,18 +125,34 @@ router.get('/route-details/:Fk_Partner', authMW.isLoggedIn, mcacheMW.cache(15), 
 		let result;
 		const Fk_Partner = req.params.Fk_Partner;
 		if (req.query.Fk_Pozicija) {
+			// rmDir(__dirname + `/../public/images/`);	 // brisi stare slike
 			rmDir(__dirname + `/../public/images/`);	 // brisi stare slike
 			result = await hubieApi.getPodaciPartnerPozicijaSlikeNew(SifraPreduzeca, Fk_Jezik, Fk_Partner, req.query.Fk_Pozicija, req.query.date) // BORCA
-			result.recordset.forEach((entry, i) => {
+			for (const [i, entry] of result.recordset.entries()) {
+				entry.DatumPosete = moment(entry.DatumPosete).utc().format('HH:mm');
 				if (entry.Slika) {
-					const fileName = req.params.Fk_Partner + `_` +entry.Fk_PartnerPozicija+ `_` +i+ `.jpg`
+					const fileName = req.params.Fk_Partner + `_` +entry.Fk_PartnerPozicija+ `_` +i;
 					const filePath = __dirname + `/../public/images/` + fileName;
-					fs.writeFileSync(filePath, entry.Slika); // save binary image from DB as file in /public/images/
-					entry.Slika = `/images/` + fileName;     // replace sql binary buffer with URL path
-				// } else {
-				// 	entry.Slika = `/assets/404.svg`;
+					entry.Slika = await parseImage(entry.Slika, filePath, fileName); // img resize
+
+					
+					// fs.writeFileSync(filePath + `.jpg`, entry.Slika); // save binary image from DB as file in /public/images/
+					// entry.Slika = `/images/` + fileName+ `.jpg`;      // replace sql binary buffer with URL path
+					
+					// await sharp(entry.Slika)
+					// 	.resize(830, 1106, { fit: "inside" })
+					// 	.sharpen()	// .webp()
+					// 	.toFile(filePath + `.webp`)
+					// 	.then(info => {							// console.log('		resize', info);
+					// 		fs.writeFileSync(filePath + `.jpg`, entry.Slika); // save binary image from DB as file in /public/images/
+					// 		entry.Slika = `/images/` + fileName+ `.webp`;     // replace sql binary buffer with URL path
+					// 	})
+					// 	.catch(err => {							console.log('		resize err, use original jpg', err);
+					// 		fs.writeFileSync(filePath + `.jpg`, entry.Slika); // save binary image from DB as file in /public/images/
+					// 		entry.Slika = `/images/` + fileName+ `.jpg`;      // replace sql binary buffer with URL path
+					// 	});
 				}
-			});
+			}
 		} else if (req.query.Zalihe) {
 			result = await hubieApi.vratiZalihePartnerOS(SifraPreduzeca, Fk_PoslovnaGodina, Fk_Jezik, Fk_Partner, req.query.date); // TODO input fiskalna godina (16)
 		} else {
@@ -166,25 +226,40 @@ router.get('/KPIsReport/radnikPodredjenPartner/:searchQuery', authMW.isLoggedIn,
 		// 	delete entry.Ulica_i_Broj;
 		// 	return entry;
 		// });
-		// res.json(await result.recordset);
-
-		// res.json(await result.recordset.map(({Sifra, Ulica_i_Broj, ...result}) => {
-		// 	result.Naziv = result.Naziv.join(', '); // spajam ime prodavnice i grad
-		// 	return result;
-		// }));
-		res.json(await result.recordset.splice(0, 100).map(({FK_Partner, ...result}) => {
-			// result.Ulica_i_Broj = (result.Ulica_i_Broj === "NEMA") ?  "" : result.Ulica_i_Broj + ', ' + result.Naziv[1];
+		res.json(await result.recordset.splice(0, 40).map(({FK_Partner, ...result}) => {
 			if (result.Ulica_i_Broj === "NEMA") {
 				result.Ulica_i_Broj = result.Naziv[1];        // grad
 			} else {
 				result.Ulica_i_Broj += ', ' + result.Naziv[1]; // ulica, grad
 			}
 			result.Naziv = result.Naziv[0]; // spajam ime prodavnice i grad
-			// result.Naziv = result.Naziv.join(', '); // spajam ime prodavnice i grad
 			return result;
 		}));
 	} catch (err) {
 		console.log('vratiRadnikPodredjenPartner err', err.message);
+		res.json(err.message);
+	}
+});
+
+/* Odblokiraj unos porudzbine */
+
+// return selected-user partners (odblokiraj unos porudzbine)
+router.get('/workerPartners/:Fk_Radnik/:searchQuery', authMW.isLoggedIn, mcacheMW.cache(60 * 5), async (req, res) => {
+	try {
+		const SifraPreduzeca = req.session.SifraPreduzeca, 
+		Fk_Jezik = req.session.Fk_Jezik;
+		let result = await hubieApi.vratiPartnereRadnikaDashBoard(SifraPreduzeca, Fk_Jezik, req.params.Fk_Radnik, req.params.searchQuery);
+		// res.json(await result.recordset);
+		res.json(await result.recordset.splice(0, 40).map(({pk_id, ...result}) => {
+			if (result.Ulica_i_Broj === "NEMA") {
+				result.Ulica_i_Broj = result.Naziv;        // grad
+			}
+			result.Naziv = result.naziv; // spajam ime prodavnice i grad
+		 	delete result.naziv;
+			return result;
+		}));
+	} catch (err) {
+		console.log('vratiPartnereRadnikaDashBoard err', err.message);
 		res.json(err.message);
 	}
 });

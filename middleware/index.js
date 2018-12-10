@@ -45,6 +45,7 @@ middlewareObj.handleLogin = async (req, res) => {
 		// req.session.username = username;
 		// res.send();
 
+		console.log('pre login');
 		result = await hubieApi.login(username, password);  // GO
 
 		req.session.username = username;
@@ -52,7 +53,7 @@ middlewareObj.handleLogin = async (req, res) => {
 		req.session.SifraPreduzeca    = result.recordsets[0][0].SifraPreduzeca;
 		req.session.Fk_PoslovnaGodina = result.recordsets[0][0].Fk_PoslovnaGodina;
 		req.session.Fk_Jezik		  = result.recordsets[0][0].Fk_Jezik;
-		// console.log('login',result.recordsets[1][0]);
+		console.log('login',result.recordsets[1][0]);
 		req.session.Supervizor		  = result.recordsets[1][0].Sifra;
 
 		if (req.body.remember_me) {
@@ -77,8 +78,12 @@ middlewareObj.handleLogin = async (req, res) => {
 		// next(err);
 		req.flash("error", err.message);
 		if (err.message === 'IncorrectLoginData') {
+			console.log('login 401', err.message);
 			res.sendStatus(401); // Unauthorized
 		} else {
+			if (err.message === 'UserNotAuthorized') {
+				console.log('login 400', err.message)
+			}
 			// res.send(400, err.message);
 			res.status(400).send(err.message)
 		}

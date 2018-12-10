@@ -96,7 +96,7 @@ app.use(function(req, res, next) {
 });
 
 // with this I'm serving the public directory
-const maxAge = 7 * 24 * 3600 * 1000;    // 7 days, 3600000msec == 1hour
+const maxAge = 31 * 24 * 3600 * 1000;    // 7 days, 3600000msec == 1hour
 app.use(express.static(__dirname + "/public", { maxAge: maxAge }));
 
 app.listen(process.env.HTTP_PORT || 3000, function() {

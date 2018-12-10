@@ -5,14 +5,14 @@ const configHubie = {
 	password: process.env.DB_PASS  || 'password',
 	server:   process.env.DB_HOST  || '127.0.0.1',
   	database: process.env.DB_HUBIE || 'Hubie',
-  	connectionTimeout: 5000,
+  	connectionTimeout: 45000,
   	requestTimeout: 100000,
   	pool: {
   		max: 15,
   		idleTimeoutMillis: 60000
 	},
 	options: {
-		encrypt: true,
+		// encrypt: true,
 		instanceName: process.env.DB_INSTANCE || ''
 	}
 }
@@ -49,10 +49,23 @@ module.exports = function() {
 					poolHubie_web.close();
 				}
 			});
-			poolHubie.on('error', err => console.log('sql errors', err));
-			poolHubie_irb.on('error', err => console.log('sql errors', err));
-			poolHubie_web.on('error', err => console.log('sql errors', err));
-			return this;
+
+			poolHubie.on('error', err => console.log('sql errors', new Date(), err.message));
+			poolHubie_irb.on('error', err => console.log('sql errors', new Date(), err.message));
+			poolHubie_web.on('error', err => console.log('sql errors', new Date(), err.message));
+
+			// console.log('connError', connError, 'connError.hasError', connError.hasError, 'poolHubie posle', poolHubie);
+
+			/* reconnect In case of connection error */
+			if (Object.keys(connError).length !== 0) {
+				console.log('error length:', connError.length, Object.keys(connError).length);
+				console.log('connError:', connError);
+				connError = {};
+				this.connect();
+			} else {
+				console.log('no connError, poolHubie._connected:', poolHubie._connected, '\ _connecting:', poolHubie._connecting);
+				return this;
+			}
 		},
 		// login: function(user, pass, forTicketing) {
 		// 	let procedure = 'task_LogIn';
@@ -67,7 +80,7 @@ module.exports = function() {
 		// },
 
 		login: function(user, pass) {
-			console.log('hube-interface.js login', user);
+			console.log('hube-interface.js login', user, pass);
 			return poolHubie_web.request()
 								 .input('Username', sql.NVarChar, user)
 								 .input('Password', sql.NVarChar, pass)
@@ -132,7 +145,7 @@ module.exports = function() {
 								.input('Datum', sql.NVarChar, date)
 						.execute('sp_VratiZalihePartnerOS');
 		},
-
+		// odblokiraj partnera
 		insertKomercijalistaPravo: function(SifraPreduzeca, user, Fk_Radnik, Fk_Partner, date, Fk_St_670) {
 			// console.log('hube-interface.js login', user, pass);
 			return poolHubie_web.request()
@@ -144,6 +157,7 @@ module.exports = function() {
 								 .input('Fk_St_670', sql.Int, Fk_St_670)
 						.execute('sv_InsertKomercijalistaPravo');
 		},
+		// KPIs report page 1/2
 		rptProdaja_DailySalesKPIsReportByCustomerBySKU: function(SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, SifraPARTNER, Dali8OZ) {
 			console.log('hube-interface.js rptProdaja_DailySalesKPIsReportByCustomerBySKU');
 			console.log(SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, SifraPARTNER, Dali8OZ);
@@ -156,6 +170,7 @@ module.exports = function() {
 								.input('Dali8OZ', sql.Int, Dali8OZ)
 						.execute('sp_RptProdaja_DailySalesKPIsReportByCustomerBySKU');
 		},
+		// KPIs report page 2/2
 		vratiRadnikPodredjenPartner: function(SifraPreduzeca, Fk_Jezik, Sifra_Radnika, searchQuery) {
 			console.log('hube-interface.js vratiRadnikPodredjenPartner');
 			console.log(SifraPreduzeca, Fk_Jezik, Sifra_Radnika, searchQuery);
@@ -165,7 +180,17 @@ module.exports = function() {
 								.input('Sifra_Radnika', sql.Int, Sifra_Radnika)
 								.input('Search', sql.NVarChar, searchQuery)
 						.execute('sp_VratiRadnikPodredjenPartner');
-		}
+		},
+		// odblokiraj unos porudzbine za partnera page
+		// ova procedura vraca podatke o partnerima za izabranog radnika - prodavca
+		vratiPartnereRadnikaDashBoard: function(SifraPreduzeca, lang_id, Fk_Radnik, searchQuery) {
+			return poolHubie.request()
+								.input('Sifra_Preduzeca', sql.Int, SifraPreduzeca)
+								.input('Jezik_id', sql.Int, lang_id)
+								.input('SifraRadnik', sql.Int, Fk_Radnik)
+								.input('Search', sql.NVarChar, searchQuery)
+						.execute('sp_VratiPartnereRadnikaDashBoard');
+		},
 		
 	}
 }();
