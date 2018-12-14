@@ -2,7 +2,8 @@ let express		= require('express'),
 	router		= express.Router(),
 	authMW		= require('../middleware'),
 	mcacheMW	= require('../middleware/memmory-cache.js'),
-	hubieApi 	= require('../models/hubie-interface').connect(),
+	// hubieApi 	= require('../models/hubie-interface').connect(),
+	hubieApi 	= require('../models/hubie-interface'),
 	moment 		= require('moment'),
 	fs			= require('fs');
 	const sharp = require('sharp');
@@ -105,7 +106,7 @@ router.get('/workerRoutes', authMW.isLoggedIn, mcacheMW.cache(9915), function(re
 					// route.DatumPocetka = moment(route.DatumPocetka).utc().format('DD.MM.YYYY HH:mm:ss');
 					// route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('DD.MM.YYYY HH:mm:ss');
 					// route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('HH:mm:ss');
-					route.Naziv = route.Naziv.split(route.Mesto)[0];
+					route.Naziv = route.Naziv.split(route.Mesto)[0].trim();
 					route.DatumPocetka = moment(route.DatumPocetka).utc().format('HH:mm');
 					route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('HH:mm');
 					route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('mm:ss');
@@ -134,23 +135,6 @@ router.get('/route-details/:Fk_Partner', authMW.isLoggedIn, mcacheMW.cache(15), 
 					const fileName = req.params.Fk_Partner + `_` +entry.Fk_PartnerPozicija+ `_` +i;
 					const filePath = __dirname + `/../public/images/` + fileName;
 					entry.Slika = await parseImage(entry.Slika, filePath, fileName); // img resize
-
-					
-					// fs.writeFileSync(filePath + `.jpg`, entry.Slika); // save binary image from DB as file in /public/images/
-					// entry.Slika = `/images/` + fileName+ `.jpg`;      // replace sql binary buffer with URL path
-					
-					// await sharp(entry.Slika)
-					// 	.resize(830, 1106, { fit: "inside" })
-					// 	.sharpen()	// .webp()
-					// 	.toFile(filePath + `.webp`)
-					// 	.then(info => {							// console.log('		resize', info);
-					// 		fs.writeFileSync(filePath + `.jpg`, entry.Slika); // save binary image from DB as file in /public/images/
-					// 		entry.Slika = `/images/` + fileName+ `.webp`;     // replace sql binary buffer with URL path
-					// 	})
-					// 	.catch(err => {							console.log('		resize err, use original jpg', err);
-					// 		fs.writeFileSync(filePath + `.jpg`, entry.Slika); // save binary image from DB as file in /public/images/
-					// 		entry.Slika = `/images/` + fileName+ `.jpg`;      // replace sql binary buffer with URL path
-					// 	});
 				}
 			}
 		} else if (req.query.Zalihe) {
@@ -247,7 +231,7 @@ router.get('/KPIsReport/radnikPodredjenPartner/:searchQuery', authMW.isLoggedIn,
 router.get('/workerPartners/:Fk_Radnik/:searchQuery', authMW.isLoggedIn, mcacheMW.cache(60 * 5), async (req, res) => {
 	try {
 		const SifraPreduzeca = req.session.SifraPreduzeca, 
-		Fk_Jezik = req.session.Fk_Jezik;
+			Fk_Jezik = req.session.Fk_Jezik;
 		let result = await hubieApi.vratiPartnereRadnikaDashBoard(SifraPreduzeca, Fk_Jezik, req.params.Fk_Radnik, req.params.searchQuery);
 		// res.json(await result.recordset);
 		res.json(await result.recordset.splice(0, 40).map(({pk_id, ...result}) => {
@@ -264,6 +248,74 @@ router.get('/workerPartners/:Fk_Radnik/:searchQuery', authMW.isLoggedIn, mcacheM
 	}
 });
 
+/* tlnr */
 
+// sv_VratiPartnerOpremaIzuzetak  (@sifra_preduzeca int, @jezik_id int, @SifraRadnik INT)
+router.get('/tlnr/VratiPartnerOpremaIzuzetak', authMW.isLoggedIn, async (req, res) => {
+	try {
+		const SifraPreduzeca = req.session.SifraPreduzeca,
+			Fk_Jezik = req.session.Fk_Jezik;
+			Fk_Radnik = req.session.Fk_Radnik;		console.log('VratiPartnerOpremaIzuzetak INPUT', req.session);
+		const result = await hubieApi.vratiPartnerOpremaIzuzetak(SifraPreduzeca, Fk_Jezik, Fk_Radnik);
+		console.log('result.length', result.length);
+		// result.recordset.forEach(element => {
+		// 	if (element.Sifra === 34612) {
+		// 		console.log(element.Sifra, '    ', element.Pk_Id);
+		// 		console.log(element);
+		// 	}
+		// });
+		const data = result.recordset.map(({Pk_Id, Fk_St_670, ...result}) => {
+			if (result.Sifra === 34612) {
+				console.log(result.Sifra, '    ', result.Pk_Id);
+				console.log(result);
+			}
+			if (result.Ulica_i_Broj === "NEMA") {
+				result.Ulica_i_Broj = result.Naziv;        // grad
+			}
+			/* izbaci grad iz naziva */
+			const cutStart = result.Naziv.toLowerCase().lastIndexOf(result.NazivMesto.toLowerCase());
+			// console.log('result.Naziv 0 ->', result.Naziv, '<- ', cutStart, ' - ', result.NazivMesto, );
+			if (cutStart != -1) {
+				const cutEnd = cutStart + result.NazivMesto.length + 1;
+				result.Naziv = (result.Naziv.slice(0, cutStart) + result.Naziv.slice(cutEnd, result.Naziv.length)).trim();
+				// console.log('result.Naziv 1 ->', result.Naziv, '<-', cutStart, cutEnd);
+			}
+			
+			// if (result.Sifra === 34612) {
+			// 	console.log(result.Sifra, '    ', result.Pk_Id);
+			// 	console.log(result);
+			// }
+			// result["Naziv partnera"] = result.Naziv
+			// delete result.Naziv;
+			result.NazivMesto = result.NazivMesto.toLowerCase().replace(/^\w/, chr => chr.toUpperCase()); // grad, veliko prvo slovo
+			result['Adresa'] = `${result.NazivMesto}, ${result.Ulica_i_Broj}`;
+			delete result.Ulica_i_Broj;
+			delete result.NazivMesto;
+			result['Naziv_S'] = result.Naziv_Stavke;
+			delete result.Naziv_Stavke;
+			// result["Datum posete"] = moment(result.DatumPosete).format('YYYY.MM.DD.');
+			// result["Datum posete"] = result.DatumPosete.toISOString().split('T')[0];
+			result['DatumP'] = moment(result.DatumPosete).format('YYYY.MM.DD.');
+			delete result.DatumPosete;
+			return result;
+		});
+		console.log('Object.keys(data[0])', Object.keys(data[0]));
+		let displayedColumns = result.recordset.length ? Object.keys(data[0]).filter(e => e !== 'Fk_Partner') : [];
+		let resp = {
+			'displayedColumns': displayedColumns, 
+			// 'columnLabels' : ['Sifra', 'Naziv Partnera', 'Adresa', 'Razlog posete', 'Datum Posete'],
+			'data': data
+		}
+		// res.json(await result);
+		res.json({
+			'displayedColumns': displayedColumns, 
+			// 'columnLabels' : ['Sifra', 'Naziv Partnera', 'Adresa', 'Razlog posete', 'Datum Posete'],
+			'data': data
+		});
+	} catch (err) {
+		console.log('route-tlnr-VratiPartnerOpremaIzuzetak err', err);
+		res.json(err);
+	}
+});
 
 module.exports = router;

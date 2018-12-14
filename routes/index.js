@@ -12,16 +12,6 @@ let express 	 = require('express'),
 // 	}
 // });
 
-// show login page
-// router.get("/login", function(req, res) {
-// 	// if(req.sessionID && req.session.fk_appUser) {
-// 	// 	(req.query.forTicketing !== undefined) ? res.redirect('tickets/ticketOverview') : res.redirect('tasks/taskOverview');
-// 	// } else {
-// 	// 	res.render('login', {style: req.cookies.style, forTicketing: req.query.forTicketing});
-// 	// }
-// 	middleware.handleLogin(req, res);
-// });
-
 // handle login
 // router.post("/login", callback);
 router.post('/api/login', function(req, res) {

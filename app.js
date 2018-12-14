@@ -99,6 +99,14 @@ app.use(function(req, res, next) {
 const maxAge = 31 * 24 * 3600 * 1000;    // 7 days, 3600000msec == 1hour
 app.use(express.static(__dirname + "/public", { maxAge: maxAge }));
 
-app.listen(process.env.HTTP_PORT || 3000, function() {
-	console.log('PPS supervisor app started!');
+// Start the web server
+const server = app.listen(process.env.HTTP_PORT || 3000, function() {
+	const host = server.address().address
+	const port = server.address().port
+	console.log(`PPS supervisor server started! Listening at http://${host}:${port}`);
+});
+const serverHttps = app.listen(process.env.HTTPS_PORT || 443, function() {
+	const host = serverHttps.address().address
+	const port = serverHttps.address().port
+	console.log(`PPS supervisor server started! Listening at http://${host}:${port}`);
 });

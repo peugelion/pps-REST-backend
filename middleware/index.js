@@ -1,4 +1,5 @@
-let hubieApi 			= require('../models/hubie-interface').connect(),
+// let hubieApi 			= require('../models/hubie-interface').connect(),
+let hubieApi 			= require('../models/hubie-interface'),
 		moment 		    = require('moment'),
 		middlewareObj = {};
 
@@ -53,8 +54,17 @@ middlewareObj.handleLogin = async (req, res) => {
 		req.session.SifraPreduzeca    = result.recordsets[0][0].SifraPreduzeca;
 		req.session.Fk_PoslovnaGodina = result.recordsets[0][0].Fk_PoslovnaGodina;
 		req.session.Fk_Jezik		  = result.recordsets[0][0].Fk_Jezik;
-		console.log('login',result.recordsets[1][0]);
-		req.session.Supervizor		  = result.recordsets[1][0].Sifra;
+		// console.log('login',result.recordsets[1][0]);
+		// console.log('login sve 0',result.recordsets[0]);
+		// console.log('login sve 1',result.recordsets[1]);
+		// console.log('login sve 2',result.recordsets[2]);
+		// console.log('login sve 3',result.recordsets[3]);
+		
+		if (result.recordsets[1].lenght) {
+			// console.log('recordsets[1]', result.recordsets[1].lenght, result.recordsets[1]);
+			req.session.Supervizor		  = result.recordsets[1][0].Sifra;
+		}
+
 
 		if (req.body.remember_me) {
 			let cookieOptions = {
@@ -71,15 +81,24 @@ middlewareObj.handleLogin = async (req, res) => {
 		res.json(await {
 			// 'env' : result.recordsets[0][0],
 			'supervizor' : result.recordsets[1][0],
-			'subordinates' : result.recordsets[2]
+			'subordinates' : result.recordsets[2],
+			'permissions' : result.recordsets[3][0][''],
 		});
 		res.send();
 	} catch (err) {
+		console.log('login err', err.message);
 		// next(err);
 		req.flash("error", err.message);
 		if (err.message === 'IncorrectLoginData') {
 			console.log('login 401', err.message);
 			res.sendStatus(401); // Unauthorized
+		} else if (err.message === 'Connection is closed.') {
+			console.log('login: Connection is closed', err.message);
+			// await hubieApi.connect();
+			// console.log('login: retry sql connection ...', req);
+			// await hubieApi.login(username, password);  // GO
+			// this.handleLogin(req, res);
+			middlewareObj.handleLogin(req, res);
 		} else {
 			if (err.message === 'UserNotAuthorized') {
 				console.log('login 400', err.message)
