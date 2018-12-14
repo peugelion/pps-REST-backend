@@ -42,7 +42,7 @@ module.exports = function() {
 	return {
 		login: async (user, pass) => {
 			// try {
-				console.log('hube-interface.js login', user, pass);
+				console.log('hube-interface.js login x', user, pass);
 				const pool = await poolHubie_web
 				return await pool.request()
 						.input('Username', sql.NVarChar, user)

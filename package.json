@@ -4,7 +4,8 @@
   "description": "Hubie based web app for pepsi supervisors",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
   },
   "repository": {
     "type": "git",
@@ -36,5 +37,7 @@
     "sharp": "^0.21.0",
     "web-push": "^3.3.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "nodemon": "^1.18.8"
+  }
 }
