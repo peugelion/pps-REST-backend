@@ -75,7 +75,7 @@ app.use(session({
 		httpOnly: true,
 		secure: false,
 		// maxAge: 30 * 60 * 1000,
-		maxAge: 5 * 24 * 60 * 60 * 1000, // 5 days
+		maxAge: 7 * 24 * 60 * 60 * 1000, // 5 days
 	}
 }));
 
@@ -138,7 +138,7 @@ app.use(function (req, res, next) {
 });
 
 // with this I'm serving the public directory
-const maxAge = 31 * 24 * 3600 * 1000; // 7 days, 3600000msec == 1hour
+const maxAge = 99 * 24 * 3600 * 1000; // 7 days, 3600000msec == 1hour
 app.use(express.static(__dirname + "/public", {
 	maxAge: maxAge
 }));

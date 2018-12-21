@@ -1,14 +1,14 @@
 // let hubieApi 			= require('../models/hubie-interface').connect(),
-let hubieApi 			= require('../models/hubie-interface'),
-		moment 		    = require('moment'),
-		middlewareObj = {};
+let hubieApi = require('../models/hubie-interface'),
+	moment = require('moment'),
+	middlewareObj = {};
 
 moment.locale('sr');
 
-middlewareObj.isLoggedIn = function(req, res, next) {
+middlewareObj.isLoggedIn = function (req, res, next) {
 	// console.log('middlewareObj.isLoggedIn req.sessionID', req.sessionID);
 	// if(req.sessionID && req.session.fk_appUser) {
-	if(req.sessionID && req.session.Fk_Radnik) {
+	if (req.sessionID && req.session.Fk_Radnik) {
 		return next();
 	}
 	// req.flash("error", "You need to be logged in to do that!");
@@ -50,19 +50,19 @@ middlewareObj.handleLogin = async (req, res) => {
 		result = await hubieApi.login(username, password);  // GO
 
 		req.session.username = username;
-		req.session.Fk_Radnik		  = result.recordsets[0][0].Fk_Radnik;
-		req.session.SifraPreduzeca    = result.recordsets[0][0].SifraPreduzeca;
+		req.session.Fk_Radnik = result.recordsets[0][0].Fk_Radnik;
+		req.session.SifraPreduzeca = result.recordsets[0][0].SifraPreduzeca;
 		req.session.Fk_PoslovnaGodina = result.recordsets[0][0].Fk_PoslovnaGodina;
-		req.session.Fk_Jezik		  = result.recordsets[0][0].Fk_Jezik;
+		req.session.Fk_Jezik = result.recordsets[0][0].Fk_Jezik;
 		// console.log('login',result.recordsets[1][0]);
 		// console.log('login sve 0',result.recordsets[0]);
 		// console.log('login sve 1',result.recordsets[1]);
 		// console.log('login sve 2',result.recordsets[2]);
 		// console.log('login sve 3',result.recordsets[3]);
-		
+
 		if (result.recordsets[1].lenght) {
 			// console.log('recordsets[1]', result.recordsets[1].lenght, result.recordsets[1]);
-			req.session.Supervizor		  = result.recordsets[1][0].Sifra;
+			req.session.Supervizor = result.recordsets[1][0].Sifra;
 		}
 
 
@@ -80,9 +80,9 @@ middlewareObj.handleLogin = async (req, res) => {
 		}
 		res.json(await {
 			// 'env' : result.recordsets[0][0],
-			'supervizor' : result.recordsets[1][0],
-			'subordinates' : result.recordsets[2],
-			'permissions' : result.recordsets[3][0][''],
+			'supervizor': result.recordsets[1][0],
+			'subordinates': result.recordsets[2],
+			'permissions': result.recordsets[3][0][''],
 		});
 		res.send();
 	} catch (err) {

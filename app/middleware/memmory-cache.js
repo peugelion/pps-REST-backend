@@ -1,7 +1,7 @@
 /* https://medium.com/the-node-js-collection/simple-server-side-cache-for-express-js-with-node-js-45ff296ca0f0 */
 let mcache = require('memory-cache');
 
-mcacheObj={};
+mcacheObj = {};
 
 mcacheObj.cache = (duration) => {
   return (req, res, next) => {
