@@ -146,21 +146,21 @@ app.use(express.static(__dirname + "/public", {
 // Start the web server
 if (production) {
 	// handles your app
-	require('https').createServer(lex.httpsOptions, lex.middleware(app)).listen(process.env.HTTPS_PORT || 443, function () {
-		console.log("Listening for ACME tls-sni-01 challenges and serve app on", this.address());
-	});
-	const server = app.listen(process.env.HTTP_PORT || 3000, function () {
+	require('https').createServer(lex.httpsOptions, lex.middleware(app)).listen(process.env.HTTPS_PORT || 443, () =>
+		console.log("Listening for ACME tls-sni-01 challenges and serve app on", this.address())
+	);
+	const server = app.listen(process.env.HTTP_PORT || 3000, () => {
 		const host = server.address().address
 		const port = server.address().port
 		console.log(`PPS supervisor server started! Listening at http://${host}:${port}`);
 	});
 } else {
-	const server = app.listen(process.env.HTTP_PORT || 3000, function () {
+	const server = app.listen(process.env.HTTP_PORT || 3000, () => {
 		const host = server.address().address
 		const port = server.address().port
 		console.log(`PPS supervisor server started! Listening at http://${host}:${port}`);
 	});
-	const serverHttps = app.listen(process.env.HTTPS_PORT || 443, function () {
+	const serverHttps = app.listen(process.env.HTTPS_PORT || 443, () => {
 		const host = serverHttps.address().address
 		const port = serverHttps.address().port
 		console.log(`PPS supervisor server started! Listening at http://${host}:${port}`);

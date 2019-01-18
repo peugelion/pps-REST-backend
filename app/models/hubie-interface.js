@@ -4,7 +4,7 @@ const configHubie = {
 	'user': process.env.DB_USER || 'sa',
 	'password': process.env.DB_PASS || 'password',
 	'server': process.env.DB_HOST || '127.0.0.1',
-	'database': process.env.DB_HUBIE || 'Hubie',
+	'database': 'Hubie',
 	'connectionTimeout': 45000,
 	'requestTimeout': 100000,
 	'pool': {
@@ -18,39 +18,35 @@ const configHubie = {
 	}
 }
 const configHubie_irb = Object.assign({}, configHubie, {
-	'database': process.env.DB_HUBIE_IRB || 'Hubie_IRB'
+	'database': 'Hubie_IRB'
 });
 const configHubie_web = Object.assign({}, configHubie, {
-	'database': process.env.DB_HUBIE_WEB || 'Hubie_Web'
+	'database': 'Hubie_Web'
 });
 
 /* https://stackoverflow.com/questions/30356148/how-can-i-use-a-single-mssql-connection-pool-across-several-routes-in-an-express */
 /* https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016 */
 const poolHubie = new sql.ConnectionPool(configHubie).connect()
-	.then(pool => { console.log('Connected to MSSQL poolHubie'); return pool })
+	.then(pool => pool, console.log('Connected to MSSQL poolHubie'))
 	.catch(err => console.log('Database Connection Failed! (poolHubie) Bad Config: ', err))
 
 const poolHubie_irb = new sql.ConnectionPool(configHubie_irb).connect()
-	.then(pool => { console.log('Connected to MSSQL poolHubie_irb'); return pool })
+	.then(pool => pool, console.log('Connected to MSSQL poolHubie_irb'))
 	.catch(err => console.log('Database Connection Failed! (poolHubie_irb) Bad Config: ', err))
 
 const poolHubie_web = new sql.ConnectionPool(configHubie_web).connect()
-	.then(pool => { console.log('Connected to MSSQL poolHubie_web'); return pool })
+	.then(pool => pool, console.log('Connected to MSSQL poolHubie_web'))
 	.catch(err => console.log('Database Connection Failed! (poolHubie_web) Bad Config: ', err))
 
 module.exports = function () {
 	return {
 		login: async (user, pass) => {
-			// try {
-			console.log('hube-interface.js login x', user, pass);
+			console.log('		hubie-interface.js user is logging in :', user, pass);
 			const pool = await poolHubie_web
 			return await pool.request()
 				.input('Username', sql.NVarChar, user)
 				.input('Password', sql.NVarChar, pass)
 				.execute('sv_LogIn');
-			// } catch (err) {
-			//  	console.log('login err (hube-interface.js)', err);
-			// }
 		},
 
 		// vratiRS: function(companyCode, lang_id, appUser, whichTable, FkStSt) {
@@ -116,6 +112,17 @@ module.exports = function () {
 				.input('Datum', sql.NVarChar, date)
 				.execute('sp_VratiZalihePartnerOS');
 		},
+		// odblokiraj unos porudzbine za partnera page
+		// ova procedura vraca podatke o partnerima za izabranog radnika - prodavca
+		vratiPartnereRadnikaDashBoard: async (SifraPreduzeca, lang_id, Fk_Radnik, searchQuery) => {
+			const pool = await poolHubie
+			return await pool.request()
+				.input('Sifra_Preduzeca', sql.Int, SifraPreduzeca)
+				.input('Jezik_id', sql.Int, lang_id)
+				.input('SifraRadnik', sql.Int, Fk_Radnik)
+				.input('Search', sql.NVarChar, searchQuery)
+				.execute('sp_VratiPartnereRadnikaDashBoard');
+		},
 		// odblokiraj partnera
 		insertKomercijalistaPravo: async (SifraPreduzeca, user, Fk_Radnik, Fk_Partner, date, Fk_St_670) => {
 			// console.log('hube-interface.js login', user, pass);
@@ -129,7 +136,7 @@ module.exports = function () {
 				.input('Fk_St_670', sql.Int, Fk_St_670)
 				.execute('sv_InsertKomercijalistaPravo');
 		},
-		// KPIs report page 1/2
+		// KPIs report: ByCustomerBySKU page [1/2]
 		rptProdaja_DailySalesKPIsReportByCustomerBySKU: async (SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, SifraPARTNER, Dali8OZ) => {
 			console.log('hube-interface.js rptProdaja_DailySalesKPIsReportByCustomerBySKU');
 			console.log(SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, SifraPARTNER, Dali8OZ);
@@ -143,7 +150,7 @@ module.exports = function () {
 				.input('Dali8OZ', sql.Int, Dali8OZ)
 				.execute('sp_RptProdaja_DailySalesKPIsReportByCustomerBySKU');
 		},
-		// KPIs report page 2/2
+		// KPIs report: ByCustomerBySKU page [2/2]
 		vratiRadnikPodredjenPartner: async (SifraPreduzeca, Fk_Jezik, Sifra_Radnika, searchQuery) => {
 			console.log('hube-interface.js vratiRadnikPodredjenPartner');
 			console.log(SifraPreduzeca, Fk_Jezik, Sifra_Radnika, searchQuery);
@@ -155,17 +162,27 @@ module.exports = function () {
 				.input('Search', sql.NVarChar, searchQuery)
 				.execute('sp_VratiRadnikPodredjenPartner');
 		},
-		// odblokiraj unos porudzbine za partnera page
-		// ova procedura vraca podatke o partnerima za izabranog radnika - prodavca
-		vratiPartnereRadnikaDashBoard: async (SifraPreduzeca, lang_id, Fk_Radnik, searchQuery) => {
+		// KPIs report: ByAreaBySKU page, CSD or Liptoon [1/1]
+		rptProdaja_DailySalesKPIsReportByAreaBySKU: async (isCSD, SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, Sifra_Radnika, Dali8OZ) => {
+			console.log(`hube-interface.js rptProdaja_DailySalesKPIsReportByAreaBySKU, isCSD: ${isCSD}, Dali8OZ: ${Dali8OZ}`);
+			console.log(isCSD, SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, Sifra_Radnika, Dali8OZ);
 			const pool = await poolHubie
 			return await pool.request()
 				.input('Sifra_Preduzeca', sql.Int, SifraPreduzeca)
-				.input('Jezik_id', sql.Int, lang_id)
-				.input('SifraRadnik', sql.Int, Fk_Radnik)
-				.input('Search', sql.NVarChar, searchQuery)
-				.execute('sp_VratiPartnereRadnikaDashBoard');
+				.input('Jezik_id', sql.NVarChar, Fk_Jezik)
+				.input('Fk_PoslovnaGodina', sql.Int, Fk_PoslovnaGodina)
+				.input('Datum_do', sql.NVarChar, Datum_do)
+				.input('SifraRadnik', sql.NVarChar, Sifra_Radnika) // Fk_Partner
+				.input('Dali8OZ', sql.Int, Dali8OZ ? Dali8OZ : 0)
+				.execute(Dali8OZ ?
+					isCSD ?
+					'sp_RptProdaja_DailySalesKPIsReportByAreaBySKU_8OZ_CSD_New' :
+					'sp_RptProdaja_DailySalesKPIsReportByAreaBySKU_8OZ_Lipton_New' :
+					isCSD ?
+					'sp_RptProdaja_DailySalesKPIsReportByAreaBySKU_CSD_New' :
+					'sp_RptProdaja_DailySalesKPIsReportByAreaBySKU_Lipton_New');
 		},
+
 		// tlnr, [Hubie_Web].[dbo].[sv_VratiPartnerOpremaIzuzetak] (@sifra_preduzeca int, @jezik_id int, @SifraRadnik INT)
 		vratiPartnerOpremaIzuzetak: async (SifraPreduzeca, lang_id, Fk_Radnik) => {
 			const pool = await poolHubie_web

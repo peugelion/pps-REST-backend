@@ -5,6 +5,8 @@ mcacheObj = {};
 
 mcacheObj.cache = (duration) => {
   return (req, res, next) => {
+    // var production = process.env.NODE_ENV === 'production'
+    // if (!production) {
     let key = '__express__' + req.originalUrl || req.url
     let cachedBody = mcache.get(key)
     // console.log('cached ?', cachedBody);
@@ -19,6 +21,12 @@ mcacheObj.cache = (duration) => {
       }
       next()
     }
+    // } else {
+    //   // ne koristi u produkciji
+    //   res.sendResponse = res.send
+    //   res.send = (body) => res.sendResponse(body)
+    //   next()
+    // }
   }
 }
 

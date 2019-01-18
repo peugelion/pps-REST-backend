@@ -13,3 +13,5 @@ daemon/
 .env
 _instalacija/
 package-lock.json
+.env.bak
+package-lock.json
