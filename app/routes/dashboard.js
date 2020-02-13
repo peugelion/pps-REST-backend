@@ -71,6 +71,42 @@ const parseSrbDateParam = (date) => {
 
 //
 
+// const parsePercentCollumnsOLD = (entry) => {
+// 	const tableColumns = Object.keys(entry);
+// 	// console.log('dailySalesByAreaBySKU tableColumns', tableColumns);
+// 	// console.log(' --- row --- ');
+// 	tableColumns.map(column => {
+// 		const TYvsLY = column.includes('vs'); // kolone sa poredjenjem meseca ove i prosle godine
+// 		if (TYvsLY) {
+// 			// console.log(column, column.length, entry[column]);
+// 			// pretvori u procente
+// 			// entry[column] *= 100;
+// 			entry[column] = +(entry[column] * 100).toFixed(0);
+// 		}
+// 	});
+// 	return entry
+// }
+
+/* pomnozi sa 100 vrednosti iz 'VS' kolona (kolone sa poredjenjem meseca ove i prosle godine), eg. 0.33  -> 33% */
+// tableRecordset.map(obj => {
+// 	Object.keys(obj)
+// 		.filter(column => column.includes('vs'))
+// 		.forEach(column => obj[column] = +(obj[column] * 100).toFixed(0));
+// 	return obj
+// })
+
+/* pomnozi sa 100 vrednosti iz 'VS' kolona (kolone sa poredjenjem meseca ove i prosle godine), eg. 0.33  -> 33% */
+const parseTablePercents = tableRecordset => {
+	// if (!tableRecordset.length) return tableRecordset;
+	const onlyVsColumns = Object.keys(tableRecordset[0]).filter(col => col.includes('vs'));
+	return tableRecordset.map(obj => {
+		onlyVsColumns.forEach(vsCol => obj[vsCol] = +(obj[vsCol] * 100).toFixed());
+		return obj
+	})
+}
+
+//
+
 // return selected-user routes
 router.get('/workerRoutes', authMw.isLoggedIn, mcacheMw.cache(10), async (req, res) => {
 	try {
@@ -85,6 +121,10 @@ router.get('/workerRoutes', authMw.isLoggedIn, mcacheMw.cache(10), async (req, r
 				route.DatumPocetka = moment(route.DatumPocetka).utc().format('HH:mm')
 				route.DatumZavrsetka = moment(route.DatumZavrsetka).utc().format('HH:mm')
 				route.DuzinaPosete = moment(route.DuzinaPosete).utc().format('mm:ss')
+				if (route.PauzaMinuta === '00:00') {
+					// route.PauzaMinuta = ''
+					delete route.PauzaMinuta
+				}
 				return route
 			})
 		});
@@ -196,7 +236,8 @@ router.get('/KPIsReport/dailySalesByCustomerBySKU/:SifraPARTNER', authMw.isLogge
 			return
 		};
 		let result = await hubieApi.rptProdaja_DailySalesKPIsReportByCustomerBySKU(SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, SifraPARTNER, 0);
-		res.json(await result.recordset);
+		// res.json(await result.recordset);
+		res.json(await parseTablePercents(result.recordset))
 	} catch (err) {
 		console.log(`dailySalesKPIsReportByCustomerBySKU err ${err.message}`);
 		res.json(err.message);
@@ -227,21 +268,21 @@ router.get('/KPIsReport/radnikPodredjenPartner/:searchQuery', authMw.isLoggedIn,
 			...result
 		}) => {
 			if (result.Ulica_i_Broj === "NEMA") {
-				result.Ulica_i_Broj = result.Naziv[1]; // grad
+				result.Ulica_i_Broj = result.Naziv[1] // grad
 			} else {
-				result.Ulica_i_Broj += ', ' + result.Naziv[1]; // ulica, grad
+				result.Ulica_i_Broj += ', ' + result.Naziv[1] // ulica, grad
 			}
-			result.Naziv = result.Naziv[0]; // spajam ime prodavnice i grad
-			return result;
+			result.Naziv = result.Naziv[0] // spajam ime prodavnice i grad
+			return result
 		}));
 	} catch (err) {
-		console.log(`vratiRadnikPodredjenPartner err ${err.message}`);
-		res.json(err.message);
+		console.log(`vratiRadnikPodredjenPartner err ${err.message}`)
+		res.json(err.message)
 	}
 });
 
-/* KPIs reports : ByAreaBySKU [4\4]  CSD or Lipton;  Dali8OZ: true\false */
-router.get('/KPIsReport/dailySalesByAreaBySKU/:Sifra_Radnika', authMw.isLoggedIn, mcacheMw.cache(60 * 15), async (req, res) => {
+/* KPIs reports : ByAreaBySKU [4 Reports, 1 & 2 u Hubie].  CSD or Lipton;  Dali8OZ: true\false */
+router.get('/KPIsReport/dailySalesByAreaBySKU/:Sifra_Radnika', authMw.isLoggedIn, mcacheMw.cache(60 * 10), async (req, res) => {
 	try {
 		console.log(`req.session.Supervizor: ${req.session.Supervizor}, req.params.Sifra_Radnika: ${req.params.Sifra_Radnika}`, req.session.Supervizor === parseInt(req.params.Sifra_Radnika, 10));
 		if (req.session.Supervizor.toString() !== req.params.Sifra_Radnika) {
@@ -259,16 +300,63 @@ router.get('/KPIsReport/dailySalesByAreaBySKU/:Sifra_Radnika', authMw.isLoggedIn
 			Dali8OZ = req.query.Dali8OZ ? parseInt(req.query.Dali8OZ, 2) : 0;
 		console.log(`CsdOrLipton boolean ${isCSD} Dali8OZ ${Dali8OZ}`);
 		let result = await hubieApi.rptProdaja_DailySalesKPIsReportByAreaBySKU(isCSD, SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, Sifra_Radnika, Dali8OZ);
-		// console.log('result.recordset', result.recordset);
-		// res.json(await result.recordset.filter(function (entry) {
-		// 	return entry['Sifra'] != 'AKTIVNI OBJEKTI'; // izbacujem visak... prvi clan niza
-		// }));
-		res.json(await result.recordset);
+		res.json(await parseTablePercents(result.recordset));
 	} catch (err) {
 		console.log(`dailySalesKPIsReportByAreaBySKU_CSD err ${err.message}`);
 		res.json(err.message);
 	}
 });
+
+/* KPIs reports : ByArea [6 reports - 3,4,5,6 u Hubie].  CSD or Lipton;  Dali8OZ: true\false */
+router.get('/KPIsReport/dailySalesByArea', authMw.isLoggedIn, mcacheMw.cache(60 * 10), async (req, res) => {
+	try {
+		const SifraPreduzeca = req.session.SifraPreduzeca,
+			Fk_Jezik = req.session.Fk_Jezik,
+			Fk_PoslovnaGodina = req.session.Fk_PoslovnaGodina
+		const Datum_do = parseSrbDateParam(req.query.Datum_do).toString(),
+			isCSD = parseInt(req.query.isCsd, 2), // CSD, Lipton or Orange, 1 or 0
+			isLipton = parseInt(req.query.isLipton, 2), // CSD, Lipton or Orange, 1 or 0
+			isOrange = parseInt(req.query.isOrange, 2), // CSD, Lipton or Orange, 1 or 0
+			Dali8OZ = parseInt(req.query.Dali8OZ, 2),
+			pending = req.query.pending ? parseInt(req.query.pending, 2) : 0
+		console.log(`CsdOrLiptonOrOrange boolean ${isCSD} ${isLipton} ${isOrange} Dali8OZ ${Dali8OZ} pending ${pending}, req.query`, req.query)
+		let result = await hubieApi.rptProdaja_DailySalesKPIsReportByArea(isCSD, isLipton, isOrange, SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum_do, Dali8OZ, pending)
+		res.json(await parseTablePercents(result.recordset))
+	} catch (err) {
+		console.log(`dailySalesKPIsReportByArea err ${err.message}`)
+		res.json(err.message)
+	}
+});
+
+/* KPIs reports : ByCustomer [x reports - 7, 8, 9 u Hubie].  CSD or Lipton;  Dali8OZ: true\false */
+router.get('/KPIsReport/dailySalesByCustomer/:Sifra_Radnika', authMw.isLoggedIn, mcacheMw.cache(60 * 10), async (req, res) => {
+	try {
+		if (req.session.Supervizor.toString() !== req.params.Sifra_Radnika) {
+			res.json({
+				'success': 'false'
+			})
+			return
+		}
+		const SifraPreduzeca = req.session.SifraPreduzeca,
+			Fk_Jezik = req.session.Fk_Jezik,
+			Fk_PoslovnaGodina = req.session.Fk_PoslovnaGodina
+		const Datum = parseSrbDateParam(req.query.Datum).toString(),
+			Sifra_Radnika = req.session.Supervizor,
+			isCSD = parseInt(req.query.isCsd, 2), // CSD, Lipton or Orange, 1 or 0
+			Dali8OZ = parseInt(req.query.Dali8OZ, 2),
+			isOutlet = parseInt(req.query.isOutlet, 2) // rpt 9 or not (rpt 7\8);
+		console.log(`CsdOrLiptonOrOrange boolean ${isCSD} Sifra_Radnika ${Sifra_Radnika} Dali8OZ ${Dali8OZ}`)
+		let result = isOutlet ?
+			await hubieApi.rptProdaja_DailySalesKPIsReportByOutlet(SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum, Sifra_Radnika, Dali8OZ) :
+			await hubieApi.rptProdaja_DailySalesKPIsReportByCustomer(isCSD, SifraPreduzeca, Fk_Jezik, Fk_PoslovnaGodina, Datum, Sifra_Radnika, Dali8OZ)
+		res.json(await parseTablePercents(result.recordset))
+	} catch (err) {
+		console.log(`dailySalesKPIsReportByArea err ${err.message}`)
+		res.json(err.message)
+	}
+});
+
+
 
 /* GET tlnr */
 
@@ -276,64 +364,43 @@ router.get('/KPIsReport/dailySalesByAreaBySKU/:Sifra_Radnika', authMw.isLoggedIn
 router.get('/tlnr/VratiPartnerOpremaIzuzetak', authMw.isLoggedIn, async (req, res) => {
 	try {
 		const SifraPreduzeca = req.session.SifraPreduzeca,
-			Fk_Jezik = req.session.Fk_Jezik;
-		Fk_Radnik = req.session.Fk_Radnik;
-		console.log('VratiPartnerOpremaIzuzetak INPUT', req.session);
-		const result = await hubieApi.vratiPartnerOpremaIzuzetak(SifraPreduzeca, Fk_Jezik, Fk_Radnik);
-		console.log('result.length', result.length);
-		// result.recordset.forEach(element => {
-		// 	if (element.Sifra === 34612) {
-		// 		console.log(element.Sifra, '    ', element.Pk_Id);
-		// 		console.log(element);
-		// 	}
-		// });
+			Fk_Jezik = req.session.Fk_Jezik,
+			Fk_Radnik = req.session.Fk_Radnik
+		const result = await hubieApi.vratiPartnerOpremaIzuzetak(SifraPreduzeca, Fk_Jezik, Fk_Radnik)
 		const data = result.recordset.map(({
 			Pk_Id,
 			Fk_St_670,
 			...result
 		}) => {
 			if (result.Ulica_i_Broj === "NEMA") {
-				result.Ulica_i_Broj = result.Naziv; // grad
+				result.Ulica_i_Broj = result.Naziv // grad
 			}
 			/* izbaci grad iz naziva */
-			const cutStart = result.Naziv.toLowerCase().lastIndexOf(result.NazivMesto.toLowerCase());
-			// console.log('result.Naziv 0 ->', result.Naziv, '<- ', cutStart, ' - ', result.NazivMesto, );
+			const cutStart = result.Naziv.toLowerCase().lastIndexOf(result.NazivMesto.toLowerCase())
 			if (cutStart != -1) {
-				const cutEnd = cutStart + result.NazivMesto.length + 1;
-				result.Naziv = (result.Naziv.slice(0, cutStart) + result.Naziv.slice(cutEnd, result.Naziv.length)).trim();
-				// console.log('result.Naziv 1 ->', result.Naziv, '<-', cutStart, cutEnd);
+				const cutEnd = cutStart + result.NazivMesto.length + 1
+				result.Naziv = (result.Naziv.slice(0, cutStart) + result.Naziv.slice(cutEnd, result.Naziv.length)).trim()
 			}
-			// result["Naziv partnera"] = result.Naziv
-			// delete result.Naziv;
-			result.NazivMesto = result.NazivMesto.toLowerCase().replace(/^\w/, chr => chr.toUpperCase()); // grad, veliko prvo slovo
-			result['Adresa'] = `${result.NazivMesto}, ${result.Ulica_i_Broj}`;
-			delete result.Ulica_i_Broj;
-			delete result.NazivMesto;
-			result['Naziv_S'] = result.Naziv_Stavke;
-			delete result.Naziv_Stavke;
-			// result["Datum posete"] = moment(result.DatumPosete).format('YYYY.MM.DD.');
-			// result["Datum posete"] = result.DatumPosete.toISOString().split('T')[0];
-			result['DatumP'] = moment(result.DatumPosete).format('YYYY.MM.DD.');
-			delete result.DatumPosete;
-			return result;
+			result.NazivMesto = result.NazivMesto.toLowerCase().replace(/^\w/, chr => chr.toUpperCase()) // grad, veliko prvo slovo
+			result['Adresa'] = `${result.NazivMesto}, ${result.Ulica_i_Broj}`
+			delete result.Ulica_i_Broj
+			delete result.NazivMesto
+			result['Naziv_S'] = result.Naziv_Stavke
+			delete result.Naziv_Stavke
+			result['DatumP'] = moment(result.DatumPosete).format('YYYY.MM.DD.')
+			delete result.DatumPosete
+			return result
 		});
-		// console.log('Object.keys(data[0])', Object.keys(data[0]));
-		let displayedColumns = result.recordset.length ? Object.keys(data[0]).filter(e => e !== 'Fk_Partner') : [];
-		let resp = {
-			'displayedColumns': displayedColumns,
-			// 'columnLabels' : ['Sifra', 'Naziv Partnera', 'Adresa', 'Razlog posete', 'Datum Posete'],
-			'data': data
-		}
-		// res.json(await result);
+		let displayedColumns = result.recordset.length ? Object.keys(data[0]).filter(e => e !== 'Fk_Partner') : []
 		res.json({
 			'displayedColumns': displayedColumns,
 			// 'columnLabels' : ['Sifra', 'Naziv Partnera', 'Adresa', 'Razlog posete', 'Datum Posete'],
 			'data': data
 		});
 	} catch (err) {
-		console.log(`route-tlnr-VratiPartnerOpremaIzuzetak err ${err}`);
-		res.json(err);
+		console.log(`route-tlnr-VratiPartnerOpremaIzuzetak err ${err}`)
+		res.json(err)
 	}
 });
 
-module.exports = router;
+module.exports = router
